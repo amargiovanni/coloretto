@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Coloretto - Gioco da Colorare</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.92);
+        }
+
+        .btn-reset {
+            background: linear-gradient(145deg, #4ade80, #22c55e);
+        }
+
+        .btn-gallery {
+            background: linear-gradient(145deg, #fbbf24, #f59e0b);
+        }
+
+        .btn svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        /* Canvas Area */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .canvas-frame {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 15px;
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #coloring-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+
+        #coloring-canvas .colorable {
+            cursor: pointer;
+            transition: filter 0.1s ease;
+        }
+
+        #coloring-canvas .colorable:hover {
+            filter: brightness(1.05);
+        }
+
+        /* Color Palette */
+        .palette-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px 25px 0 0;
+            padding: 15px;
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.15);
+        }
+
+        .palette {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .color-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .color-btn:active {
+            transform: scale(0.9);
+        }
+
+        .color-btn.selected {
+            border-color: #1f2937;
+            transform: scale(1.15);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Gallery Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
+            max-width: 90%;
+            max-height: 85%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: #1f2937;
+        }
+
+        .btn-close {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(145deg, #ef4444, #dc2626);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-close:active {
+            transform: scale(0.92);
+        }
+
+        .btn-close svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            background: #f3f4f6;
+            border-radius: 15px;
+            padding: 10px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid transparent;
+        }
+
+        .gallery-item:active {
+            transform: scale(0.95);
+        }
+
+        .gallery-item.selected {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .gallery-item svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 428px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+
+            .btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .btn svg {
+                width: 24px;
+                height: 24px;
+            }
+
+            .color-btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            .palette {
+                gap: 8px;
+            }
+
+            .canvas-frame {
+                padding: 10px;
+                border-radius: 15px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .header {
+                padding: 15px 25px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .btn {
+                width: 60px;
+                height: 60px;
+            }
+
+            .btn svg {
+                width: 32px;
+                height: 32px;
+            }
+
+            .color-btn {
+                width: 56px;
+                height: 56px;
+            }
+
+            .palette {
+                gap: 12px;
+                max-width: 600px;
+            }
+
+            .canvas-frame {
+                padding: 20px;
+            }
+
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .color-btn {
+                width: 60px;
+                height: 60px;
+            }
+
+            .palette {
+                max-width: 700px;
+            }
+        }
+
+        /* Landscape mode adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .header {
+                padding: 5px 15px;
+            }
+
+            .header h1 {
+                font-size: 1rem;
+            }
+
+            .btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            .btn svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .canvas-container {
+                padding: 10px;
+            }
+
+            .palette-container {
+                padding: 8px;
+            }
+
+            .color-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            .palette {
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Coloretto</h1>
+            <div class="header-buttons">
+                <button class="btn btn-reset" id="resetBtn" aria-label="Ricomincia">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                </button>
+                <button class="btn btn-gallery" id="galleryBtn" aria-label="Galleria">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Canvas Area -->
+        <main class="canvas-container">
+            <div class="canvas-frame">
+                <svg id="coloring-canvas" viewBox="0 0 400 300"></svg>
+            </div>
+        </main>
+
+        <!-- Color Palette -->
+        <nav class="palette-container">
+            <div class="palette" id="palette"></div>
+        </nav>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div class="modal-overlay" id="galleryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Scegli un disegno</h2>
+                <button class="btn-close" id="closeModal" aria-label="Chiudi">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="gallery" id="gallery"></div>
+        </div>
+    </div>
+
+    <script>
+        // Color palette
+        const colors = [
+            '#ef4444', // red
+            '#f97316', // orange
+            '#fbbf24', // amber
+            '#facc15', // yellow
+            '#84cc16', // lime
+            '#22c55e', // green
+            '#14b8a6', // teal
+            '#06b6d4', // cyan
+            '#3b82f6', // blue
+            '#8b5cf6', // violet
+            '#d946ef', // fuchsia
+            '#ec4899', // pink
+            '#78716c', // stone
+            '#1f2937', // gray-800
+            '#ffffff', // white
+        ];
+
+        // SVG Images for coloring
+        const images = {
+            truck: {
+                name: 'Camion',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <rect class="colorable" data-id="truck-body" x="150" y="100" width="200" height="100" rx="5" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="truck-cabin" x="50" y="120" width="100" height="80" rx="5" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="truck-window" x="60" y="130" width="60" height="40" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="truck-cargo1" x="160" y="110" width="180" height="25" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="truck-cargo2" x="160" y="140" width="180" height="25" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="truck-cargo3" x="160" y="170" width="180" height="25" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="truck-wheel1" cx="100" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="truck-wheel1-inner" cx="100" cy="210" r="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="truck-wheel2" cx="250" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="truck-wheel2-inner" cx="250" cy="210" r="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="truck-wheel3" cx="320" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="truck-wheel3-inner" cx="320" cy="210" r="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect x="55" y="180" width="5" height="20" fill="#374151"/>
+                `
+            },
+            house: {
+                name: 'Casa',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <polygon class="colorable" data-id="roof" points="200,30 50,120 350,120" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="wall" x="80" y="120" width="240" height="150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="door" x="170" y="180" width="60" height="90" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle cx="220" cy="225" r="5" fill="#374151"/>
+                    <rect class="colorable" data-id="window1" x="100" y="150" width="50" height="50" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <line x1="125" y1="150" x2="125" y2="200" stroke="#374151" stroke-width="2"/>
+                    <line x1="100" y1="175" x2="150" y2="175" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="window2" x="250" y="150" width="50" height="50" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <line x1="275" y1="150" x2="275" y2="200" stroke="#374151" stroke-width="2"/>
+                    <line x1="250" y1="175" x2="300" y2="175" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="chimney" x="280" y="50" width="30" height="50" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="sun" cx="60" cy="50" rx="30" ry="30" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                `
+            },
+            butterfly: {
+                name: 'Farfalla',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <ellipse class="colorable" data-id="body" cx="200" cy="150" rx="15" ry="60" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="head" cx="200" cy="80" r="20" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <path class="colorable" data-id="wing-left-top" d="M185 110 Q80 60 80 130 Q80 160 185 150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <path class="colorable" data-id="wing-right-top" d="M215 110 Q320 60 320 130 Q320 160 215 150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <path class="colorable" data-id="wing-left-bottom" d="M185 155 Q80 160 90 210 Q100 250 185 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <path class="colorable" data-id="wing-right-bottom" d="M215 155 Q320 160 310 210 Q300 250 215 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="wing-dot1" cx="120" cy="120" r="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="wing-dot2" cx="280" cy="120" r="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="wing-dot3" cx="115" cy="195" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="wing-dot4" cx="285" cy="195" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <line x1="190" y1="65" x2="170" y2="40" stroke="#374151" stroke-width="2"/>
+                    <line x1="210" y1="65" x2="230" y2="40" stroke="#374151" stroke-width="2"/>
+                    <circle cx="170" cy="38" r="5" fill="#374151"/>
+                    <circle cx="230" cy="38" r="5" fill="#374151"/>
+                    <circle cx="193" cy="75" r="4" fill="#374151"/>
+                    <circle cx="207" cy="75" r="4" fill="#374151"/>
+                `
+            },
+            fish: {
+                name: 'Pesce',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <ellipse class="colorable" data-id="body" cx="200" cy="150" rx="120" ry="70" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <polygon class="colorable" data-id="tail" points="320,150 380,100 380,200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <polygon class="colorable" data-id="fin-top" points="200,80 230,40 250,80" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="fin-bottom" points="200,220 230,260 250,220" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="fin-side" cx="180" cy="170" rx="25" ry="15" transform="rotate(-30 180 170)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="eye-outer" cx="120" cy="130" r="20" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle cx="115" cy="128" r="10" fill="#374151"/>
+                    <circle cx="112" cy="125" r="4" fill="white"/>
+                    <path d="M90 170 Q75 175 90 180" stroke="#374151" stroke-width="2" fill="none"/>
+                    <ellipse class="colorable" data-id="scale1" cx="200" cy="130" rx="20" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                    <ellipse class="colorable" data-id="scale2" cx="240" cy="140" rx="20" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                    <ellipse class="colorable" data-id="scale3" cx="280" cy="150" rx="20" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                    <ellipse class="colorable" data-id="scale4" cx="200" cy="170" rx="20" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                    <ellipse class="colorable" data-id="scale5" cx="240" cy="175" rx="20" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                `
+            },
+            flower: {
+                name: 'Fiore',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <rect class="colorable" data-id="stem" x="195" y="150" width="10" height="130" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="leaf1" cx="160" cy="220" rx="35" ry="15" transform="rotate(-30 160 220)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="leaf2" cx="240" cy="240" rx="35" ry="15" transform="rotate(30 240 240)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="petal1" cx="200" cy="70" rx="30" ry="45" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="petal2" cx="150" cy="100" rx="30" ry="45" transform="rotate(-60 150 100)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="petal3" cx="250" cy="100" rx="30" ry="45" transform="rotate(60 250 100)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="petal4" cx="155" cy="150" rx="30" ry="45" transform="rotate(-120 155 150)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="petal5" cx="245" cy="150" rx="30" ry="45" transform="rotate(120 245 150)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="center" cx="200" cy="120" r="35" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                `
+            },
+            car: {
+                name: 'Auto',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <path class="colorable" data-id="body" d="M50 180 L50 140 L100 140 L130 100 L270 100 L300 140 L350 140 L350 180 L50 180" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="window-front" x="135" y="105" width="55" height="35" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="window-back" x="200" y="105" width="65" height="35" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="wheel1" cx="110" cy="190" r="35" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="wheel1-inner" cx="110" cy="190" r="18" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="wheel2" cx="290" cy="190" r="35" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="wheel2-inner" cx="290" cy="190" r="18" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="headlight" x="330" y="145" width="20" height="15" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="taillight" x="50" y="145" width="15" height="15" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="door" x="160" y="140" width="80" height="40" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle cx="225" cy="160" r="4" fill="#374151"/>
+                `
+            },
+            rocket: {
+                name: 'Razzo',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <ellipse class="colorable" data-id="body" cx="200" cy="140" rx="40" ry="100" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <ellipse class="colorable" data-id="nose" cx="200" cy="50" rx="25" ry="40" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="window" x="180" y="100" width="40" height="40" rx="20" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="fin-left" points="160,180 120,250 160,240" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="fin-right" points="240,180 280,250 240,240" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="fin-center" points="200,240 180,240 175,270 200,255 225,270 220,240" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="flame1" cx="200" cy="280" rx="15" ry="20" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="flame2" cx="185" cy="275" rx="10" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="flame3" cx="215" cy="275" rx="10" ry="15" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="porthole" cx="200" cy="165" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                `
+            },
+            tree: {
+                name: 'Albero',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <rect class="colorable" data-id="trunk" x="175" y="180" width="50" height="100" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <polygon class="colorable" data-id="leaves1" points="200,20 100,120 300,120" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <polygon class="colorable" data-id="leaves2" points="200,60 80,160 320,160" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <polygon class="colorable" data-id="leaves3" points="200,100 60,200 340,200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="apple1" cx="140" cy="140" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="apple2" cx="260" cy="150" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="apple3" cx="180" cy="175" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="apple4" cx="230" cy="185" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                `
+            },
+            boat: {
+                name: 'Barca',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <path class="colorable" data-id="hull" d="M50 200 L80 250 L320 250 L350 200 L50 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <rect class="colorable" data-id="cabin" x="150" y="140" width="100" height="60" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="cabin-window1" x="160" y="150" width="25" height="25" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect class="colorable" data-id="cabin-window2" x="215" y="150" width="25" height="25" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <rect x="195" y="80" width="10" height="60" fill="#374151"/>
+                    <polygon class="colorable" data-id="sail" points="205,85 205,135 280,135" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="flag" points="205,50 205,85 170,67" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <path class="colorable" data-id="wave1" d="M20 270 Q60 255 100 270 Q140 285 180 270 Q220 255 260 270 Q300 285 340 270 Q380 255 400 270" fill="none" stroke="#374151" stroke-width="3"/>
+                `
+            },
+            star: {
+                name: 'Stella',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <polygon class="colorable" data-id="star-main" points="200,30 230,110 315,110 250,160 275,245 200,195 125,245 150,160 85,110 170,110" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="star-center" cx="200" cy="145" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="sparkle1" cx="100" cy="60" r="10" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="sparkle2" cx="300" cy="70" r="8" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="sparkle3" cx="330" cy="200" r="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <circle class="colorable" data-id="sparkle4" cx="70" cy="190" r="9" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                `
+            },
+            cat: {
+                name: 'Gatto',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <ellipse class="colorable" data-id="body" cx="200" cy="200" rx="80" ry="60" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <circle class="colorable" data-id="head" cx="200" cy="110" r="55" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <polygon class="colorable" data-id="ear-left" points="155,70 145,20 175,55" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="ear-right" points="245,70 255,20 225,55" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <polygon class="colorable" data-id="ear-left-inner" points="155,65 150,35 170,55" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                    <polygon class="colorable" data-id="ear-right-inner" points="245,65 250,35 230,55" fill="#e5e7eb" stroke="#374151" stroke-width="1"/>
+                    <ellipse cx="175" cy="100" rx="12" ry="15" fill="white" stroke="#374151" stroke-width="2"/>
+                    <ellipse cx="225" cy="100" rx="12" ry="15" fill="white" stroke="#374151" stroke-width="2"/>
+                    <ellipse cx="175" cy="102" rx="6" ry="10" fill="#374151"/>
+                    <ellipse cx="225" cy="102" rx="6" ry="10" fill="#374151"/>
+                    <ellipse class="colorable" data-id="nose" cx="200" cy="125" rx="8" ry="6" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <path d="M200 131 Q190 145 180 140" stroke="#374151" stroke-width="2" fill="none"/>
+                    <path d="M200 131 Q210 145 220 140" stroke="#374151" stroke-width="2" fill="none"/>
+                    <line x1="160" y1="120" x2="120" y2="115" stroke="#374151" stroke-width="2"/>
+                    <line x1="160" y1="130" x2="120" y2="130" stroke="#374151" stroke-width="2"/>
+                    <line x1="160" y1="140" x2="120" y2="145" stroke="#374151" stroke-width="2"/>
+                    <line x1="240" y1="120" x2="280" y2="115" stroke="#374151" stroke-width="2"/>
+                    <line x1="240" y1="130" x2="280" y2="130" stroke="#374151" stroke-width="2"/>
+                    <line x1="240" y1="140" x2="280" y2="145" stroke="#374151" stroke-width="2"/>
+                    <path class="colorable" data-id="tail" d="M280 200 Q330 180 340 220 Q350 260 320 250" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>
+                    <ellipse class="colorable" data-id="paw1" cx="150" cy="250" rx="20" ry="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="paw2" cx="250" cy="250" rx="20" ry="12" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                `
+            },
+            rainbow: {
+                name: 'Arcobaleno',
+                viewBox: '0 0 400 300',
+                svg: `
+                    <path class="colorable" data-id="arc1" d="M30 250 A170 170 0 0 1 370 250" fill="none" stroke="#e5e7eb" stroke-width="20"/>
+                    <path class="colorable" data-id="arc2" d="M50 250 A150 150 0 0 1 350 250" fill="none" stroke="#e5e7eb" stroke-width="20"/>
+                    <path class="colorable" data-id="arc3" d="M70 250 A130 130 0 0 1 330 250" fill="none" stroke="#e5e7eb" stroke-width="20"/>
+                    <path class="colorable" data-id="arc4" d="M90 250 A110 110 0 0 1 310 250" fill="none" stroke="#e5e7eb" stroke-width="20"/>
+                    <path class="colorable" data-id="arc5" d="M110 250 A90 90 0 0 1 290 250" fill="none" stroke="#e5e7eb" stroke-width="20"/>
+                    <path class="colorable" data-id="arc6" d="M130 250 A70 70 0 0 1 270 250" fill="none" stroke="#e5e7eb" stroke-width="20"/>
+                    <ellipse class="colorable" data-id="cloud1" cx="60" cy="250" rx="40" ry="25" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="cloud2" cx="340" cy="250" rx="40" ry="25" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <ellipse class="colorable" data-id="sun" cx="330" cy="60" rx="35" ry="35" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>
+                    <line x1="330" y1="15" x2="330" y2="0" stroke="#374151" stroke-width="3"/>
+                    <line x1="375" y1="60" x2="390" y2="60" stroke="#374151" stroke-width="3"/>
+                    <line x1="360" y1="30" x2="375" y2="15" stroke="#374151" stroke-width="3"/>
+                    <line x1="360" y1="90" x2="375" y2="105" stroke="#374151" stroke-width="3"/>
+                `
+            }
+        };
+
+        // State
+        let selectedColor = colors[0];
+        let currentImage = 'truck';
+        let coloredElements = {};
+
+        // DOM Elements
+        const canvas = document.getElementById('coloring-canvas');
+        const palette = document.getElementById('palette');
+        const resetBtn = document.getElementById('resetBtn');
+        const galleryBtn = document.getElementById('galleryBtn');
+        const galleryModal = document.getElementById('galleryModal');
+        const closeModal = document.getElementById('closeModal');
+        const gallery = document.getElementById('gallery');
+
+        // Initialize color palette
+        function initPalette() {
+            palette.innerHTML = '';
+            colors.forEach((color, index) => {
+                const btn = document.createElement('button');
+                btn.className = `color-btn ${color === selectedColor ? 'selected' : ''}`;
+                btn.style.backgroundColor = color;
+                if (color === '#ffffff') {
+                    btn.style.border = '4px solid #d1d5db';
+                }
+                btn.setAttribute('aria-label', `Colore ${index + 1}`);
+                btn.addEventListener('click', () => selectColor(color, btn));
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    selectColor(color, btn);
+                }, { passive: false });
+                palette.appendChild(btn);
+            });
+        }
+
+        // Select color
+        function selectColor(color, btn) {
+            selectedColor = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        // Load image to canvas
+        function loadImage(imageKey) {
+            const image = images[imageKey];
+            if (!image) return;
+
+            currentImage = imageKey;
+            canvas.setAttribute('viewBox', image.viewBox);
+            canvas.innerHTML = image.svg;
+
+            // Restore colors if any
+            if (coloredElements[imageKey]) {
+                Object.entries(coloredElements[imageKey]).forEach(([id, color]) => {
+                    const element = canvas.querySelector(`[data-id="${id}"]`);
+                    if (element) {
+                        element.setAttribute('fill', color);
+                    }
+                });
+            }
+
+            // Add event listeners to colorable elements
+            canvas.querySelectorAll('.colorable').forEach(element => {
+                element.addEventListener('click', () => colorElement(element));
+                element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    colorElement(element);
+                }, { passive: false });
+            });
+
+            // Update gallery selection
+            document.querySelectorAll('.gallery-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.image === imageKey);
+            });
+        }
+
+        // Color an element
+        function colorElement(element) {
+            const id = element.getAttribute('data-id');
+            element.setAttribute('fill', selectedColor);
+
+            // Save colored state
+            if (!coloredElements[currentImage]) {
+                coloredElements[currentImage] = {};
+            }
+            coloredElements[currentImage][id] = selectedColor;
+        }
+
+        // Reset current image
+        function resetImage() {
+            coloredElements[currentImage] = {};
+            loadImage(currentImage);
+        }
+
+        // Initialize gallery
+        function initGallery() {
+            gallery.innerHTML = '';
+            Object.entries(images).forEach(([key, image]) => {
+                const item = document.createElement('div');
+                item.className = `gallery-item ${key === currentImage ? 'selected' : ''}`;
+                item.dataset.image = key;
+                item.innerHTML = `<svg viewBox="${image.viewBox}">${image.svg}</svg>`;
+                item.addEventListener('click', () => {
+                    loadImage(key);
+                    closeGalleryModal();
+                });
+                item.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    loadImage(key);
+                    closeGalleryModal();
+                }, { passive: false });
+                gallery.appendChild(item);
+            });
+        }
+
+        // Modal controls
+        function openGalleryModal() {
+            galleryModal.classList.add('active');
+        }
+
+        function closeGalleryModal() {
+            galleryModal.classList.remove('active');
+        }
+
+        // Event listeners
+        resetBtn.addEventListener('click', resetImage);
+        resetBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            resetImage();
+        }, { passive: false });
+
+        galleryBtn.addEventListener('click', openGalleryModal);
+        galleryBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            openGalleryModal();
+        }, { passive: false });
+
+        closeModal.addEventListener('click', closeGalleryModal);
+        closeModal.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            closeGalleryModal();
+        }, { passive: false });
+
+        galleryModal.addEventListener('click', (e) => {
+            if (e.target === galleryModal) {
+                closeGalleryModal();
+            }
+        });
+
+        // Prevent zoom on double tap
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+
+        // Prevent pull-to-refresh
+        document.body.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.modal-content')) return;
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Initialize
+        initPalette();
+        initGallery();
+        loadImage(currentImage);
+    </script>
+</body>
+</html>
