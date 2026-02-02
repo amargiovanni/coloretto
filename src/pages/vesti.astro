@@ -114,7 +114,7 @@ import GameButton from '../components/GameButton.astro';
             const deltaX = Math.abs(touch.clientX - touchState.startX);
             const deltaY = Math.abs(touch.clientY - touchState.startY);
             const deltaTime = Date.now() - touchState.startTime;
-            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 500) {
+            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 1500) {
                 e.preventDefault();
                 callback();
             }

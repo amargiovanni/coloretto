@@ -249,7 +249,7 @@ import Header from '../components/Header.astro';
             const deltaTime = Date.now() - touchState.startTime;
 
             // Accept tap if movement is within tolerance and time is reasonable
-            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 500) {
+            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 1500) {
                 e.preventDefault();
                 callback(element);
             }
