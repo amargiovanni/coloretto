@@ -47,7 +47,12 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
-    const shapes = {
+    interface ShapeData {
+        color: string;
+        svg: string;
+    }
+
+    const shapes: Record<string, ShapeData> = {
         circle: { color: '#ef4444', svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ef4444"/></svg>` },
         square: { color: '#3b82f6', svg: `<svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="5" fill="#3b82f6"/></svg>` },
         triangle: { color: '#22c55e', svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="#22c55e"/></svg>` },
@@ -56,74 +61,77 @@ import Header from '../components/Header.astro';
         hexagon: { color: '#8b5cf6', svg: `<svg viewBox="0 0 100 100"><polygon points="50,5 93,27 93,73 50,95 7,73 7,27" fill="#8b5cf6"/></svg>` }
     };
 
-    let matched = 0, draggedElement = null;
-    const shapesColumn = document.getElementById('shapesColumn');
-    const targetsColumn = document.getElementById('targetsColumn');
-    const matchedCount = document.getElementById('matchedCount');
-    const totalCount = document.getElementById('totalCount');
-    const confettiContainer = document.getElementById('confettiContainer');
-    const winModal = document.getElementById('winModal');
+    let matched: number = 0, draggedElement: HTMLElement | null = null;
+    const shapesColumn = document.getElementById('shapesColumn')!;
+    const targetsColumn = document.getElementById('targetsColumn')!;
+    const matchedCount = document.getElementById('matchedCount')!;
+    const totalCount = document.getElementById('totalCount')!;
+    const confettiContainer = document.getElementById('confettiContainer')!;
+    const winModal = document.getElementById('winModal')!;
 
-    function initGame() {
-        matched = 0; matchedCount.textContent = matched; winModal.classList.remove('active');
-        const keys = Object.keys(shapes); totalCount.textContent = keys.length;
+    function initGame(): void {
+        matched = 0; matchedCount.textContent = String(matched); winModal.classList.remove('active');
+        const keys = Object.keys(shapes); totalCount.textContent = String(keys.length);
         shapesColumn.innerHTML = ''; targetsColumn.innerHTML = '';
-        [...keys].sort(() => Math.random() - 0.5).forEach(key => {
+        [...keys].sort(() => Math.random() - 0.5).forEach((key: string) => {
             const el = document.createElement('div'); el.className = 'shape-item'; el.dataset.shape = key;
             el.innerHTML = shapes[key].svg; addDrag(el); shapesColumn.appendChild(el);
         });
-        [...keys].sort(() => Math.random() - 0.5).forEach(key => {
+        [...keys].sort(() => Math.random() - 0.5).forEach((key: string) => {
             const el = document.createElement('div'); el.className = 'target-zone'; el.dataset.shape = key;
             el.innerHTML = shapes[key].svg; targetsColumn.appendChild(el);
         });
     }
 
-    function addDrag(el) {
+    function addDrag(el: HTMLElement): void {
         el.addEventListener('mousedown', startDrag); el.addEventListener('touchstart', startDrag, { passive: false });
     }
 
-    function startDrag(e) {
-        e.preventDefault(); draggedElement = e.currentTarget; draggedElement.classList.add('dragging');
+    function startDrag(e: MouseEvent | TouchEvent): void {
+        e.preventDefault(); draggedElement = e.currentTarget as HTMLElement; draggedElement.classList.add('dragging');
         document.addEventListener('mousemove', moveDrag); document.addEventListener('mouseup', endDrag);
         document.addEventListener('touchmove', moveDrag, { passive: false }); document.addEventListener('touchend', endDrag);
-        const { clientX, clientY } = e.touches ? e.touches[0] : e;
+        const touch = e instanceof TouchEvent ? e.touches[0] : e;
+        const { clientX, clientY } = touch;
         draggedElement.style.position = 'fixed';
         draggedElement.style.left = `${clientX - 40}px`; draggedElement.style.top = `${clientY - 40}px`;
     }
 
-    function moveDrag(e) {
+    function moveDrag(e: MouseEvent | TouchEvent): void {
         if (!draggedElement) return; e.preventDefault();
-        const { clientX, clientY } = e.touches ? e.touches[0] : e;
+        const touch = e instanceof TouchEvent ? e.touches[0] : e;
+        const { clientX, clientY } = touch;
         draggedElement.style.left = `${clientX - 40}px`; draggedElement.style.top = `${clientY - 40}px`;
-        document.querySelectorAll('.target-zone:not(.matched)').forEach(t => {
+        document.querySelectorAll<HTMLElement>('.target-zone:not(.matched)').forEach((t) => {
             const r = t.getBoundingClientRect();
             t.classList.toggle('highlight', clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom);
         });
     }
 
-    function endDrag(e) {
+    function endDrag(e: MouseEvent | TouchEvent): void {
         if (!draggedElement) return;
-        const { clientX, clientY } = e.changedTouches ? e.changedTouches[0] : e;
-        const target = [...document.querySelectorAll('.target-zone:not(.matched)')].find(t => {
+        const touch = e instanceof TouchEvent ? e.changedTouches[0] : e;
+        const { clientX, clientY } = touch;
+        const target = [...document.querySelectorAll<HTMLElement>('.target-zone:not(.matched)')].find((t) => {
             const r = t.getBoundingClientRect();
             return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
         });
         if (target && draggedElement.dataset.shape === target.dataset.shape) {
-            matched++; matchedCount.textContent = matched;
+            matched++; matchedCount.textContent = String(matched);
             draggedElement.classList.add('matched'); target.classList.add('matched');
-            confetti(target);
+            createConfetti(target);
             if (matched === Object.keys(shapes).length) setTimeout(() => winModal.classList.add('active'), 500);
         }
         draggedElement.style.position = ''; draggedElement.style.left = ''; draggedElement.style.top = '';
         draggedElement.classList.remove('dragging'); draggedElement = null;
-        document.querySelectorAll('.target-zone').forEach(t => t.classList.remove('highlight'));
+        document.querySelectorAll('.target-zone').forEach((t) => t.classList.remove('highlight'));
         document.removeEventListener('mousemove', moveDrag); document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchmove', moveDrag); document.removeEventListener('touchend', endDrag);
     }
 
-    function confetti(target) {
+    function createConfetti(target: HTMLElement): void {
         const r = target.getBoundingClientRect(), cx = r.left + r.width/2, cy = r.top + r.height/2;
-        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#fbbf24', '#ec4899', '#8b5cf6'];
+        const colors: string[] = ['#ef4444', '#3b82f6', '#22c55e', '#fbbf24', '#ec4899', '#8b5cf6'];
         for (let i = 0; i < 15; i++) {
             const c = document.createElement('div'); c.className = 'confetti';
             c.style.left = `${cx + (Math.random()-0.5)*100}px`; c.style.top = `${cy}px`;
@@ -132,7 +140,7 @@ import Header from '../components/Header.astro';
         }
     }
 
-    document.getElementById('resetBtn').addEventListener('click', initGame);
-    document.getElementById('playAgainBtn').addEventListener('click', initGame);
+    document.getElementById('resetBtn')!.addEventListener('click', initGame);
+    document.getElementById('playAgainBtn')!.addEventListener('click', initGame);
     initGame();
 </script>

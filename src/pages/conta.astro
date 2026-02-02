@@ -41,7 +41,7 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
-    const objects = {
+    const objects: Record<string, string> = {
         apple: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="35" ry="38" fill="#ef4444"/><path d="M50 20 Q55 5 65 10" stroke="#22c55e" stroke-width="4" fill="none"/><ellipse cx="60" cy="15" rx="12" ry="8" fill="#22c55e"/></svg>`,
         star: `<svg viewBox="0 0 100 100"><polygon points="50,5 61,40 98,40 68,62 79,97 50,75 21,97 32,62 2,40 39,40" fill="#fbbf24"/></svg>`,
         ball: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#3b82f6"/><ellipse cx="35" cy="40" rx="15" ry="20" fill="#60a5fa" opacity="0.6"/></svg>`,
@@ -49,24 +49,24 @@ import Header from '../components/Header.astro';
         flower: `<svg viewBox="0 0 100 100"><rect x="47" y="55" width="6" height="35" fill="#22c55e"/><circle cx="50" cy="35" r="12" fill="#fbbf24"/><ellipse cx="50" cy="15" rx="10" ry="15" fill="#ec4899"/><ellipse cx="30" cy="28" rx="10" ry="15" fill="#ec4899" transform="rotate(-60 30 28)"/><ellipse cx="70" cy="28" rx="10" ry="15" fill="#ec4899" transform="rotate(60 70 28)"/></svg>`
     };
 
-    let currentCount = 0, score = 0, canAnswer = true;
-    const objectsArea = document.getElementById('objectsArea');
-    const numbersContainer = document.getElementById('numbersContainer');
-    const scoreDisplay = document.getElementById('score');
-    const celebrationContainer = document.getElementById('celebrationContainer');
+    let currentCount: number = 0, score: number = 0, canAnswer: boolean = true;
+    const objectsArea = document.getElementById('objectsArea')!;
+    const numbersContainer = document.getElementById('numbersContainer')!;
+    const scoreDisplay = document.getElementById('score')!;
+    const celebrationContainer = document.getElementById('celebrationContainer')!;
 
-    function initGame() {
-        score = 0; scoreDisplay.textContent = score;
+    function initGame(): void {
+        score = 0; scoreDisplay.textContent = String(score);
         numbersContainer.innerHTML = '';
         for (let i = 1; i <= 5; i++) {
-            const btn = document.createElement('button'); btn.className = 'number-btn'; btn.textContent = i;
+            const btn = document.createElement('button'); btn.className = 'number-btn'; btn.textContent = String(i);
             btn.addEventListener('click', () => handleAnswer(i, btn));
             numbersContainer.appendChild(btn);
         }
         nextRound();
     }
 
-    function nextRound() {
+    function nextRound(): void {
         canAnswer = true;
         currentCount = Math.floor(Math.random() * 5) + 1;
         const keys = Object.keys(objects);
@@ -77,13 +77,13 @@ import Header from '../components/Header.astro';
             el.innerHTML = objects[obj]; el.style.animationDelay = `${i * 0.1}s`;
             objectsArea.appendChild(el);
         }
-        document.querySelectorAll('.number-btn').forEach(b => b.classList.remove('correct', 'wrong'));
+        document.querySelectorAll('.number-btn').forEach((b) => b.classList.remove('correct', 'wrong'));
     }
 
-    function handleAnswer(num, btn) {
+    function handleAnswer(num: number, btn: HTMLButtonElement): void {
         if (!canAnswer) return;
         if (num === currentCount) {
-            canAnswer = false; score++; scoreDisplay.textContent = score;
+            canAnswer = false; score++; scoreDisplay.textContent = String(score);
             btn.classList.add('correct'); celebrate();
             setTimeout(nextRound, 1000);
         } else {
@@ -92,9 +92,9 @@ import Header from '../components/Header.astro';
         }
     }
 
-    function celebrate() {
+    function celebrate(): void {
         const r = objectsArea.getBoundingClientRect(), cx = r.left + r.width/2, cy = r.top + r.height/2;
-        const emojis = ['⭐', '🌟', '✨', '💫'];
+        const emojis: string[] = ['⭐', '🌟', '✨', '💫'];
         for (let i = 0; i < 12; i++) {
             const star = document.createElement('div'); star.className = 'celebration-star';
             star.textContent = emojis[Math.floor(Math.random() * emojis.length)];

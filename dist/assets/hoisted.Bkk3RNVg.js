@@ -1,1 +1,0 @@
-let n=0;document.addEventListener("touchend",e=>{const t=Date.now();t-n<=300&&e.preventDefault(),n=t},{passive:!1});document.body.addEventListener("touchmove",e=>{e.touches.length>1&&e.preventDefault()},{passive:!1});

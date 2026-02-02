@@ -44,7 +44,7 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
-    const animals = {
+    const animals: Record<string, string> = {
         dog: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="30" ry="25" fill="#8B4513"/><circle cx="50" cy="35" r="22" fill="#A0522D"/><ellipse cx="35" cy="25" rx="8" ry="12" fill="#8B4513"/><ellipse cx="65" cy="25" rx="8" ry="12" fill="#8B4513"/><circle cx="42" cy="32" r="4" fill="#1f2937"/><circle cx="58" cy="32" r="4" fill="#1f2937"/><ellipse cx="50" cy="42" rx="6" ry="4" fill="#1f2937"/></svg>`,
         cat: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="28" ry="22" fill="#808080"/><circle cx="50" cy="35" r="20" fill="#909090"/><polygon points="32,25 28,5 42,20" fill="#808080"/><polygon points="68,25 72,5 58,20" fill="#808080"/><ellipse cx="40" cy="32" rx="5" ry="6" fill="#90EE90"/><ellipse cx="60" cy="32" rx="5" ry="6" fill="#90EE90"/><ellipse cx="50" cy="40" rx="4" ry="3" fill="#FFB6C1"/></svg>`,
         rabbit: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="60" rx="25" ry="22" fill="#E8E8E8"/><circle cx="50" cy="42" r="18" fill="#F5F5F5"/><ellipse cx="38" cy="15" rx="6" ry="20" fill="#F5F5F5"/><ellipse cx="62" cy="15" rx="6" ry="20" fill="#F5F5F5"/><circle cx="42" cy="38" r="3" fill="#1f2937"/><circle cx="58" cy="38" r="3" fill="#1f2937"/><ellipse cx="50" cy="48" rx="4" ry="3" fill="#FFB6C1"/></svg>`,
@@ -54,52 +54,52 @@ import Header from '../components/Header.astro';
         bear: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="30" ry="25" fill="#8B4513"/><circle cx="50" cy="38" r="25" fill="#A0522D"/><circle cx="30" cy="20" r="10" fill="#8B4513"/><circle cx="70" cy="20" r="10" fill="#8B4513"/><circle cx="40" cy="35" r="4" fill="#1f2937"/><circle cx="60" cy="35" r="4" fill="#1f2937"/><ellipse cx="50" cy="45" rx="8" ry="6" fill="#D2691E"/></svg>`,
         lion: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#DAA520"/><circle cx="50" cy="50" r="25" fill="#FFD700"/><circle cx="40" cy="45" r="4" fill="#1f2937"/><circle cx="60" cy="45" r="4" fill="#1f2937"/><ellipse cx="50" cy="55" rx="6" ry="4" fill="#8B4513"/></svg>`
     };
-    const cardBackIcon = `<svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+    const cardBackIcon: string = `<svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
 
-    let cards = [], flippedCards = [], matchedPairs = 0, moves = 0, canFlip = true;
-    const gameBoard = document.getElementById('gameBoard');
-    const movesCount = document.getElementById('movesCount');
-    const resetBtn = document.getElementById('resetBtn');
-    const starsContainer = document.getElementById('starsContainer');
-    const winModal = document.getElementById('winModal');
-    const finalMoves = document.getElementById('finalMoves');
-    const playAgainBtn = document.getElementById('playAgainBtn');
+    let cards: string[] = [], flippedCards: HTMLElement[] = [], matchedPairs: number = 0, moves: number = 0, canFlip: boolean = true;
+    const gameBoard = document.getElementById('gameBoard')!;
+    const movesCount = document.getElementById('movesCount')!;
+    const resetBtn = document.getElementById('resetBtn')!;
+    const starsContainer = document.getElementById('starsContainer')!;
+    const winModal = document.getElementById('winModal')!;
+    const finalMoves = document.getElementById('finalMoves')!;
+    const playAgainBtn = document.getElementById('playAgainBtn')!;
 
-    function initGame() {
+    function initGame(): void {
         const animalKeys = Object.keys(animals);
         cards = [...animalKeys, ...animalKeys].sort(() => Math.random() - 0.5);
         flippedCards = []; matchedPairs = 0; moves = 0; canFlip = true;
-        movesCount.textContent = moves;
+        movesCount.textContent = String(moves);
         gameBoard.innerHTML = '';
         winModal.classList.remove('active');
-        cards.forEach((animal, i) => {
+        cards.forEach((animal: string, i: number) => {
             const card = document.createElement('div');
-            card.className = 'card'; card.dataset.index = i; card.dataset.animal = animal;
+            card.className = 'card'; card.dataset.index = String(i); card.dataset.animal = animal;
             card.innerHTML = `<div class="card-inner"><div class="card-front">${cardBackIcon}</div><div class="card-back">${animals[animal]}</div></div>`;
             card.addEventListener('click', () => flipCard(card));
             gameBoard.appendChild(card);
         });
     }
 
-    function flipCard(card) {
+    function flipCard(card: HTMLElement): void {
         if (!canFlip || card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length >= 2) return;
         card.classList.add('flipped'); flippedCards.push(card);
-        if (flippedCards.length === 2) { moves++; movesCount.textContent = moves; checkMatch(); }
+        if (flippedCards.length === 2) { moves++; movesCount.textContent = String(moves); checkMatch(); }
     }
 
-    function checkMatch() {
+    function checkMatch(): void {
         canFlip = false;
         const [c1, c2] = flippedCards;
         if (c1.dataset.animal === c2.dataset.animal) {
             c1.classList.add('matched'); c2.classList.add('matched');
             createStars(c1); createStars(c2); matchedPairs++; flippedCards = []; canFlip = true;
-            if (matchedPairs === Object.keys(animals).length) setTimeout(() => { finalMoves.textContent = moves; winModal.classList.add('active'); }, 500);
+            if (matchedPairs === Object.keys(animals).length) setTimeout(() => { finalMoves.textContent = String(moves); winModal.classList.add('active'); }, 500);
         } else {
             setTimeout(() => { c1.classList.remove('flipped'); c2.classList.remove('flipped'); flippedCards = []; canFlip = true; }, 1000);
         }
     }
 
-    function createStars(card) {
+    function createStars(card: HTMLElement): void {
         const rect = card.getBoundingClientRect();
         for (let i = 0; i < 8; i++) {
             const star = document.createElement('div'); star.className = 'star'; star.textContent = '⭐';
