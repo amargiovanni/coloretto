@@ -1,0 +1,307 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Coloretto - Gioco da Colorare">
+    <div class="app-container">
+        <Header title="Coloretto">
+            <button class="btn btn-reset" id="resetBtn" aria-label="Ricomincia">
+                <svg viewBox="0 0 24 24">
+                    <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+            </button>
+            <button class="btn btn-gallery" id="galleryBtn" aria-label="Galleria">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+                </svg>
+            </button>
+        </Header>
+
+        <main class="canvas-container">
+            <div class="canvas-frame">
+                <svg id="coloring-canvas" viewBox="0 0 400 300"></svg>
+            </div>
+        </main>
+
+        <nav class="palette-container">
+            <div class="palette" id="palette"></div>
+        </nav>
+    </div>
+
+    <div class="modal-overlay" id="galleryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Scegli un disegno</h2>
+                <button class="btn-close" id="closeModal" aria-label="Chiudi">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="gallery" id="gallery"></div>
+        </div>
+    </div>
+</GameLayout>
+
+<style>
+    .canvas-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        overflow: hidden;
+    }
+
+    .canvas-frame {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        padding: 15px;
+        width: 100%;
+        height: 100%;
+        max-width: 800px;
+        max-height: calc(100% - 30px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    #coloring-canvas {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+    }
+
+    #coloring-canvas :global(.colorable) {
+        cursor: pointer;
+        transition: filter 0.1s ease;
+    }
+
+    #coloring-canvas :global(.colorable:hover) {
+        filter: brightness(1.05);
+    }
+
+    .palette-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 25px 25px 0 0;
+        padding: 15px;
+        box-shadow: 0 -5px 30px rgba(0,0,0,0.15);
+    }
+
+    .palette {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    :global(.color-btn) {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 4px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+
+    :global(.color-btn:active) {
+        transform: scale(0.9);
+    }
+
+    :global(.color-btn.selected) {
+        border-color: #1f2937;
+        transform: scale(1.15);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+
+    .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+
+    :global(.gallery-item) {
+        aspect-ratio: 1;
+        background: #f3f4f6;
+        border-radius: 15px;
+        padding: 10px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid transparent;
+    }
+
+    :global(.gallery-item:active) {
+        transform: scale(0.95);
+    }
+
+    :global(.gallery-item.selected) {
+        border-color: #667eea;
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    :global(.gallery-item svg) {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    @media (max-width: 400px) {
+        .color-btn {
+            width: 40px;
+            height: 40px;
+        }
+        .palette {
+            gap: 8px;
+        }
+        .canvas-frame {
+            padding: 10px;
+            border-radius: 15px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        :global(.color-btn) {
+            width: 56px;
+            height: 56px;
+        }
+        .palette {
+            gap: 12px;
+            max-width: 600px;
+        }
+        .canvas-frame {
+            padding: 20px;
+        }
+        .gallery {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        .canvas-container {
+            padding: 10px;
+        }
+        .palette-container {
+            padding: 8px;
+        }
+        :global(.color-btn) {
+            width: 36px;
+            height: 36px;
+        }
+        .palette {
+            gap: 6px;
+        }
+    }
+</style>
+
+<script>
+    const colors = [
+        '#ef4444', '#f97316', '#fbbf24', '#facc15', '#84cc16',
+        '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6',
+        '#d946ef', '#ec4899', '#78716c', '#1f2937', '#ffffff',
+    ];
+
+    const images = {
+        truck: { name: 'Camion', viewBox: '0 0 400 300', svg: `<rect class="colorable" data-id="truck-body" x="150" y="100" width="200" height="100" rx="5" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="truck-cabin" x="50" y="120" width="100" height="80" rx="5" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="truck-window" x="60" y="130" width="60" height="40" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><circle class="colorable" data-id="truck-wheel1" cx="100" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="truck-wheel2" cx="250" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="truck-wheel3" cx="320" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>` },
+        house: { name: 'Casa', viewBox: '0 0 400 300', svg: `<polygon class="colorable" data-id="roof" points="200,30 50,120 350,120" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="wall" x="80" y="120" width="240" height="150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="door" x="170" y="180" width="60" height="90" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><rect class="colorable" data-id="window1" x="100" y="150" width="50" height="50" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><rect class="colorable" data-id="window2" x="250" y="150" width="50" height="50" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="sun" cx="60" cy="50" rx="30" ry="30" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>` },
+        butterfly: { name: 'Farfalla', viewBox: '0 0 400 300', svg: `<ellipse class="colorable" data-id="body" cx="200" cy="150" rx="15" ry="60" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="head" cx="200" cy="80" r="20" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-left" d="M185 110 Q80 60 80 130 Q80 160 185 150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-right" d="M215 110 Q320 60 320 130 Q320 160 215 150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-left-b" d="M185 155 Q80 160 90 210 Q100 250 185 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-right-b" d="M215 155 Q320 160 310 210 Q300 250 215 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>` },
+        fish: { name: 'Pesce', viewBox: '0 0 400 300', svg: `<ellipse class="colorable" data-id="body" cx="200" cy="150" rx="120" ry="70" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><polygon class="colorable" data-id="tail" points="320,150 380,100 380,200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><polygon class="colorable" data-id="fin-top" points="200,80 230,40 250,80" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><circle class="colorable" data-id="eye" cx="120" cy="130" r="20" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>` },
+        flower: { name: 'Fiore', viewBox: '0 0 400 300', svg: `<rect class="colorable" data-id="stem" x="195" y="150" width="10" height="130" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="leaf1" cx="160" cy="220" rx="35" ry="15" transform="rotate(-30 160 220)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="petal1" cx="200" cy="70" rx="30" ry="45" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="petal2" cx="150" cy="100" rx="30" ry="45" transform="rotate(-60 150 100)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="petal3" cx="250" cy="100" rx="30" ry="45" transform="rotate(60 250 100)" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><circle class="colorable" data-id="center" cx="200" cy="120" r="35" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>` },
+        car: { name: 'Auto', viewBox: '0 0 400 300', svg: `<path class="colorable" data-id="body" d="M50 180 L50 140 L100 140 L130 100 L270 100 L300 140 L350 140 L350 180 L50 180" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="window" x="135" y="105" width="130" height="35" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><circle class="colorable" data-id="wheel1" cx="110" cy="190" r="35" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="wheel2" cx="290" cy="190" r="35" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>` },
+        star: { name: 'Stella', viewBox: '0 0 400 300', svg: `<polygon class="colorable" data-id="star-main" points="200,30 230,110 315,110 250,160 275,245 200,195 125,245 150,160 85,110 170,110" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="star-center" cx="200" cy="145" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>` },
+        cat: { name: 'Gatto', viewBox: '0 0 400 300', svg: `<ellipse class="colorable" data-id="body" cx="200" cy="200" rx="80" ry="60" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="head" cx="200" cy="110" r="55" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><polygon class="colorable" data-id="ear-left" points="155,70 145,20 175,55" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><polygon class="colorable" data-id="ear-right" points="245,70 255,20 225,55" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="nose" cx="200" cy="125" rx="8" ry="6" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>` },
+    };
+
+    let selectedColor = colors[0];
+    let currentImage = 'truck';
+    let coloredElements = {};
+
+    const canvas = document.getElementById('coloring-canvas');
+    const palette = document.getElementById('palette');
+    const resetBtn = document.getElementById('resetBtn');
+    const galleryBtn = document.getElementById('galleryBtn');
+    const galleryModal = document.getElementById('galleryModal');
+    const closeModal = document.getElementById('closeModal');
+    const gallery = document.getElementById('gallery');
+
+    function initPalette() {
+        palette.innerHTML = '';
+        colors.forEach((color, index) => {
+            const btn = document.createElement('button');
+            btn.className = `color-btn ${color === selectedColor ? 'selected' : ''}`;
+            btn.style.backgroundColor = color;
+            if (color === '#ffffff') btn.style.border = '4px solid #d1d5db';
+            btn.addEventListener('click', () => selectColor(color, btn));
+            palette.appendChild(btn);
+        });
+    }
+
+    function selectColor(color, btn) {
+        selectedColor = color;
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function loadImage(imageKey) {
+        const image = images[imageKey];
+        if (!image) return;
+        currentImage = imageKey;
+        canvas.setAttribute('viewBox', image.viewBox);
+        canvas.innerHTML = image.svg;
+        if (coloredElements[imageKey]) {
+            Object.entries(coloredElements[imageKey]).forEach(([id, color]) => {
+                const el = canvas.querySelector(`[data-id="${id}"]`);
+                if (el) el.setAttribute('fill', color);
+            });
+        }
+        canvas.querySelectorAll('.colorable').forEach(el => {
+            el.addEventListener('click', () => colorElement(el));
+        });
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.image === imageKey);
+        });
+    }
+
+    function colorElement(el) {
+        const id = el.getAttribute('data-id');
+        el.setAttribute('fill', selectedColor);
+        if (!coloredElements[currentImage]) coloredElements[currentImage] = {};
+        coloredElements[currentImage][id] = selectedColor;
+    }
+
+    function resetImage() {
+        coloredElements[currentImage] = {};
+        loadImage(currentImage);
+    }
+
+    function initGallery() {
+        gallery.innerHTML = '';
+        Object.entries(images).forEach(([key, image]) => {
+            const item = document.createElement('div');
+            item.className = `gallery-item ${key === currentImage ? 'selected' : ''}`;
+            item.dataset.image = key;
+            item.innerHTML = `<svg viewBox="${image.viewBox}">${image.svg}</svg>`;
+            item.addEventListener('click', () => { loadImage(key); galleryModal.classList.remove('active'); });
+            gallery.appendChild(item);
+        });
+    }
+
+    resetBtn.addEventListener('click', resetImage);
+    galleryBtn.addEventListener('click', () => galleryModal.classList.add('active'));
+    closeModal.addEventListener('click', () => galleryModal.classList.remove('active'));
+    galleryModal.addEventListener('click', (e) => { if (e.target === galleryModal) galleryModal.classList.remove('active'); });
+
+    initPalette();
+    initGallery();
+    loadImage(currentImage);
+</script>

@@ -1,0 +1,115 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Memory degli Animali">
+    <div class="app-container">
+        <Header title="Memory Animali">
+            <div class="moves-counter">Mosse: <span id="movesCount">0</span></div>
+            <button class="btn btn-reset" id="resetBtn" aria-label="Ricomincia">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </button>
+        </Header>
+        <main class="game-container"><div class="game-board" id="gameBoard"></div></main>
+        <div class="stars-container" id="starsContainer"></div>
+        <div class="modal-overlay" id="winModal">
+            <div class="modal-content">
+                <h2>Bravissimo!</h2>
+                <p>Hai completato il gioco in <span id="finalMoves">0</span> mosse!</p>
+                <button class="modal-btn" id="playAgainBtn">Gioca Ancora</button>
+            </div>
+        </div>
+    </div>
+</GameLayout>
+
+<style>
+    .moves-counter { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; color: white; font-weight: 600; }
+    .game-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 15px; }
+    .game-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 500px; width: 100%; aspect-ratio: 1; }
+    :global(.card) { aspect-ratio: 1; perspective: 1000px; cursor: pointer; }
+    :global(.card-inner) { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
+    :global(.card.flipped .card-inner), :global(.card.matched .card-inner) { transform: rotateY(180deg); }
+    :global(.card-front), :global(.card-back) { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    :global(.card-front) { background: linear-gradient(145deg, #3b82f6, #2563eb); }
+    :global(.card-front svg) { width: 50%; height: 50%; fill: white; opacity: 0.5; }
+    :global(.card-back) { background: white; transform: rotateY(180deg); }
+    :global(.card-back svg) { width: 70%; height: 70%; }
+    .stars-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+    :global(.star) { position: absolute; font-size: 30px; animation: starFall 1s ease-out forwards; }
+    @keyframes starFall { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0; transform: translateY(100px) rotate(360deg) scale(0); } }
+    .modal-content { text-align: center; padding: 40px; }
+    .modal-content h2 { font-size: 2rem; margin-bottom: 15px; color: #1f2937; }
+    .modal-content p { font-size: 1.2rem; color: #6b7280; margin-bottom: 25px; }
+</style>
+
+<script>
+    const animals = {
+        dog: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="30" ry="25" fill="#8B4513"/><circle cx="50" cy="35" r="22" fill="#A0522D"/><ellipse cx="35" cy="25" rx="8" ry="12" fill="#8B4513"/><ellipse cx="65" cy="25" rx="8" ry="12" fill="#8B4513"/><circle cx="42" cy="32" r="4" fill="#1f2937"/><circle cx="58" cy="32" r="4" fill="#1f2937"/><ellipse cx="50" cy="42" rx="6" ry="4" fill="#1f2937"/></svg>`,
+        cat: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="28" ry="22" fill="#808080"/><circle cx="50" cy="35" r="20" fill="#909090"/><polygon points="32,25 28,5 42,20" fill="#808080"/><polygon points="68,25 72,5 58,20" fill="#808080"/><ellipse cx="40" cy="32" rx="5" ry="6" fill="#90EE90"/><ellipse cx="60" cy="32" rx="5" ry="6" fill="#90EE90"/><ellipse cx="50" cy="40" rx="4" ry="3" fill="#FFB6C1"/></svg>`,
+        rabbit: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="60" rx="25" ry="22" fill="#E8E8E8"/><circle cx="50" cy="42" r="18" fill="#F5F5F5"/><ellipse cx="38" cy="15" rx="6" ry="20" fill="#F5F5F5"/><ellipse cx="62" cy="15" rx="6" ry="20" fill="#F5F5F5"/><circle cx="42" cy="38" r="3" fill="#1f2937"/><circle cx="58" cy="38" r="3" fill="#1f2937"/><ellipse cx="50" cy="48" rx="4" ry="3" fill="#FFB6C1"/></svg>`,
+        bird: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="22" ry="25" fill="#FFD700"/><circle cx="50" cy="35" r="18" fill="#FFEC8B"/><polygon points="50,42 42,50 58,50" fill="#FF6347"/><circle cx="43" cy="32" r="4" fill="white"/><circle cx="57" cy="32" r="4" fill="white"/><circle cx="44" cy="33" r="2" fill="#1f2937"/><circle cx="58" cy="33" r="2" fill="#1f2937"/></svg>`,
+        fish: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="30" ry="20" fill="#4169E1"/><polygon points="80,50 95,35 95,65" fill="#4169E1"/><circle cx="35" cy="45" r="5" fill="white"/><circle cx="36" cy="46" r="2" fill="#1f2937"/></svg>`,
+        butterfly: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="5" ry="20" fill="#8B4513"/><circle cx="50" cy="28" r="6" fill="#8B4513"/><ellipse cx="30" cy="40" rx="18" ry="15" fill="#FF69B4"/><ellipse cx="70" cy="40" rx="18" ry="15" fill="#FF69B4"/><ellipse cx="30" cy="60" rx="15" ry="12" fill="#FFB6C1"/><ellipse cx="70" cy="60" rx="15" ry="12" fill="#FFB6C1"/></svg>`,
+        bear: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="30" ry="25" fill="#8B4513"/><circle cx="50" cy="38" r="25" fill="#A0522D"/><circle cx="30" cy="20" r="10" fill="#8B4513"/><circle cx="70" cy="20" r="10" fill="#8B4513"/><circle cx="40" cy="35" r="4" fill="#1f2937"/><circle cx="60" cy="35" r="4" fill="#1f2937"/><ellipse cx="50" cy="45" rx="8" ry="6" fill="#D2691E"/></svg>`,
+        lion: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="#DAA520"/><circle cx="50" cy="50" r="25" fill="#FFD700"/><circle cx="40" cy="45" r="4" fill="#1f2937"/><circle cx="60" cy="45" r="4" fill="#1f2937"/><ellipse cx="50" cy="55" rx="6" ry="4" fill="#8B4513"/></svg>`
+    };
+    const cardBackIcon = `<svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+
+    let cards = [], flippedCards = [], matchedPairs = 0, moves = 0, canFlip = true;
+    const gameBoard = document.getElementById('gameBoard');
+    const movesCount = document.getElementById('movesCount');
+    const resetBtn = document.getElementById('resetBtn');
+    const starsContainer = document.getElementById('starsContainer');
+    const winModal = document.getElementById('winModal');
+    const finalMoves = document.getElementById('finalMoves');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    function initGame() {
+        const animalKeys = Object.keys(animals);
+        cards = [...animalKeys, ...animalKeys].sort(() => Math.random() - 0.5);
+        flippedCards = []; matchedPairs = 0; moves = 0; canFlip = true;
+        movesCount.textContent = moves;
+        gameBoard.innerHTML = '';
+        winModal.classList.remove('active');
+        cards.forEach((animal, i) => {
+            const card = document.createElement('div');
+            card.className = 'card'; card.dataset.index = i; card.dataset.animal = animal;
+            card.innerHTML = `<div class="card-inner"><div class="card-front">${cardBackIcon}</div><div class="card-back">${animals[animal]}</div></div>`;
+            card.addEventListener('click', () => flipCard(card));
+            gameBoard.appendChild(card);
+        });
+    }
+
+    function flipCard(card) {
+        if (!canFlip || card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length >= 2) return;
+        card.classList.add('flipped'); flippedCards.push(card);
+        if (flippedCards.length === 2) { moves++; movesCount.textContent = moves; checkMatch(); }
+    }
+
+    function checkMatch() {
+        canFlip = false;
+        const [c1, c2] = flippedCards;
+        if (c1.dataset.animal === c2.dataset.animal) {
+            c1.classList.add('matched'); c2.classList.add('matched');
+            createStars(c1); createStars(c2); matchedPairs++; flippedCards = []; canFlip = true;
+            if (matchedPairs === Object.keys(animals).length) setTimeout(() => { finalMoves.textContent = moves; winModal.classList.add('active'); }, 500);
+        } else {
+            setTimeout(() => { c1.classList.remove('flipped'); c2.classList.remove('flipped'); flippedCards = []; canFlip = true; }, 1000);
+        }
+    }
+
+    function createStars(card) {
+        const rect = card.getBoundingClientRect();
+        for (let i = 0; i < 8; i++) {
+            const star = document.createElement('div'); star.className = 'star'; star.textContent = '⭐';
+            star.style.left = `${rect.left + rect.width/2 + (Math.random()-0.5)*60}px`;
+            star.style.top = `${rect.top + rect.height/2 + (Math.random()-0.5)*60}px`;
+            starsContainer.appendChild(star); setTimeout(() => star.remove(), 1000);
+        }
+    }
+
+    resetBtn.addEventListener('click', initGame);
+    playAgainBtn.addEventListener('click', initGame);
+    initGame();
+</script>

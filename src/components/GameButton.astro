@@ -1,0 +1,43 @@
+---
+interface Props {
+    id?: string;
+    color: 'home' | 'reset' | 'gallery' | 'green' | 'orange' | 'blue' | 'red';
+    ariaLabel: string;
+    href?: string;
+}
+
+const { id, color, ariaLabel, href } = Astro.props;
+
+const colorClasses: Record<string, string> = {
+    home: 'btn-home',
+    reset: 'btn-reset',
+    gallery: 'btn-gallery',
+    green: 'btn-reset',
+    orange: 'btn-orange',
+    blue: 'btn-blue',
+    red: 'btn-red'
+};
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+    id={id}
+    href={href}
+    class={`btn ${colorClasses[color]}`}
+    aria-label={ariaLabel}
+>
+    <slot />
+</Tag>
+
+<style>
+    .btn-orange {
+        background: linear-gradient(145deg, #f59e0b, #d97706);
+    }
+    .btn-blue {
+        background: linear-gradient(145deg, #3b82f6, #2563eb);
+    }
+    .btn-red {
+        background: linear-gradient(145deg, #ef4444, #dc2626);
+    }
+</style>
