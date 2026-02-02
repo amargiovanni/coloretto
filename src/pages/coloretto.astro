@@ -205,13 +205,19 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
-    const colors = [
+    interface ImageData {
+        name: string;
+        viewBox: string;
+        svg: string;
+    }
+
+    const colors: string[] = [
         '#ef4444', '#f97316', '#fbbf24', '#facc15', '#84cc16',
         '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6',
         '#d946ef', '#ec4899', '#78716c', '#1f2937', '#ffffff',
     ];
 
-    const images = {
+    const images: Record<string, ImageData> = {
         truck: { name: 'Camion', viewBox: '0 0 400 300', svg: `<rect class="colorable" data-id="truck-body" x="150" y="100" width="200" height="100" rx="5" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="truck-cabin" x="50" y="120" width="100" height="80" rx="5" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="truck-window" x="60" y="130" width="60" height="40" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><circle class="colorable" data-id="truck-wheel1" cx="100" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="truck-wheel2" cx="250" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="truck-wheel3" cx="320" cy="210" r="30" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>` },
         house: { name: 'Casa', viewBox: '0 0 400 300', svg: `<polygon class="colorable" data-id="roof" points="200,30 50,120 350,120" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="wall" x="80" y="120" width="240" height="150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><rect class="colorable" data-id="door" x="170" y="180" width="60" height="90" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><rect class="colorable" data-id="window1" x="100" y="150" width="50" height="50" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><rect class="colorable" data-id="window2" x="250" y="150" width="50" height="50" rx="3" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="sun" cx="60" cy="50" rx="30" ry="30" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>` },
         butterfly: { name: 'Farfalla', viewBox: '0 0 400 300', svg: `<ellipse class="colorable" data-id="body" cx="200" cy="150" rx="15" ry="60" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="head" cx="200" cy="80" r="20" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-left" d="M185 110 Q80 60 80 130 Q80 160 185 150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-right" d="M215 110 Q320 60 320 130 Q320 160 215 150" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-left-b" d="M185 155 Q80 160 90 210 Q100 250 185 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><path class="colorable" data-id="wing-right-b" d="M215 155 Q320 160 310 210 Q300 250 215 200" fill="#e5e7eb" stroke="#374151" stroke-width="3"/>` },
@@ -222,21 +228,21 @@ import Header from '../components/Header.astro';
         cat: { name: 'Gatto', viewBox: '0 0 400 300', svg: `<ellipse class="colorable" data-id="body" cx="200" cy="200" rx="80" ry="60" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><circle class="colorable" data-id="head" cx="200" cy="110" r="55" fill="#e5e7eb" stroke="#374151" stroke-width="3"/><polygon class="colorable" data-id="ear-left" points="155,70 145,20 175,55" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><polygon class="colorable" data-id="ear-right" points="245,70 255,20 225,55" fill="#e5e7eb" stroke="#374151" stroke-width="2"/><ellipse class="colorable" data-id="nose" cx="200" cy="125" rx="8" ry="6" fill="#e5e7eb" stroke="#374151" stroke-width="2"/>` },
     };
 
-    let selectedColor = colors[0];
-    let currentImage = 'truck';
-    let coloredElements = {};
+    let selectedColor: string = colors[0];
+    let currentImage: string = 'truck';
+    let coloredElements: Record<string, Record<string, string>> = {};
 
-    const canvas = document.getElementById('coloring-canvas');
-    const palette = document.getElementById('palette');
-    const resetBtn = document.getElementById('resetBtn');
-    const galleryBtn = document.getElementById('galleryBtn');
-    const galleryModal = document.getElementById('galleryModal');
-    const closeModal = document.getElementById('closeModal');
-    const gallery = document.getElementById('gallery');
+    const canvas = document.getElementById('coloring-canvas')!;
+    const palette = document.getElementById('palette')!;
+    const resetBtn = document.getElementById('resetBtn')!;
+    const galleryBtn = document.getElementById('galleryBtn')!;
+    const galleryModal = document.getElementById('galleryModal')!;
+    const closeModal = document.getElementById('closeModal')!;
+    const gallery = document.getElementById('gallery')!;
 
-    function initPalette() {
+    function initPalette(): void {
         palette.innerHTML = '';
-        colors.forEach((color, index) => {
+        colors.forEach((color: string) => {
             const btn = document.createElement('button');
             btn.className = `color-btn ${color === selectedColor ? 'selected' : ''}`;
             btn.style.backgroundColor = color;
@@ -246,47 +252,48 @@ import Header from '../components/Header.astro';
         });
     }
 
-    function selectColor(color, btn) {
+    function selectColor(color: string, btn: HTMLButtonElement): void {
         selectedColor = color;
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('.color-btn').forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
     }
 
-    function loadImage(imageKey) {
+    function loadImage(imageKey: string): void {
         const image = images[imageKey];
         if (!image) return;
         currentImage = imageKey;
         canvas.setAttribute('viewBox', image.viewBox);
         canvas.innerHTML = image.svg;
         if (coloredElements[imageKey]) {
-            Object.entries(coloredElements[imageKey]).forEach(([id, color]) => {
+            Object.entries(coloredElements[imageKey]).forEach(([id, color]: [string, string]) => {
                 const el = canvas.querySelector(`[data-id="${id}"]`);
                 if (el) el.setAttribute('fill', color);
             });
         }
-        canvas.querySelectorAll('.colorable').forEach(el => {
-            el.addEventListener('click', () => colorElement(el));
+        canvas.querySelectorAll('.colorable').forEach((el) => {
+            el.addEventListener('click', () => colorElement(el as Element));
         });
-        document.querySelectorAll('.gallery-item').forEach(item => {
+        document.querySelectorAll<HTMLElement>('.gallery-item').forEach((item) => {
             item.classList.toggle('selected', item.dataset.image === imageKey);
         });
     }
 
-    function colorElement(el) {
+    function colorElement(el: Element): void {
         const id = el.getAttribute('data-id');
+        if (!id) return;
         el.setAttribute('fill', selectedColor);
         if (!coloredElements[currentImage]) coloredElements[currentImage] = {};
         coloredElements[currentImage][id] = selectedColor;
     }
 
-    function resetImage() {
+    function resetImage(): void {
         coloredElements[currentImage] = {};
         loadImage(currentImage);
     }
 
-    function initGallery() {
+    function initGallery(): void {
         gallery.innerHTML = '';
-        Object.entries(images).forEach(([key, image]) => {
+        Object.entries(images).forEach(([key, image]: [string, ImageData]) => {
             const item = document.createElement('div');
             item.className = `gallery-item ${key === currentImage ? 'selected' : ''}`;
             item.dataset.image = key;
@@ -299,7 +306,7 @@ import Header from '../components/Header.astro';
     resetBtn.addEventListener('click', resetImage);
     galleryBtn.addEventListener('click', () => galleryModal.classList.add('active'));
     closeModal.addEventListener('click', () => galleryModal.classList.remove('active'));
-    galleryModal.addEventListener('click', (e) => { if (e.target === galleryModal) galleryModal.classList.remove('active'); });
+    galleryModal.addEventListener('click', (e: Event) => { if (e.target === galleryModal) galleryModal.classList.remove('active'); });
 
     initPalette();
     initGallery();

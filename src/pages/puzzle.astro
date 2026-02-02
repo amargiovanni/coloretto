@@ -84,7 +84,13 @@ import GameButton from '../components/GameButton.astro';
 </style>
 
 <script>
-    const puzzles = [
+    interface PuzzleData {
+        name: string;
+        pieces: string[];
+        fullImage: string;
+    }
+
+    const puzzles: PuzzleData[] = [
         {
             name: 'Sole',
             pieces: [
@@ -147,104 +153,104 @@ import GameButton from '../components/GameButton.astro';
         }
     ];
 
-    let currentPuzzleIndex = 0;
-    let placedPieces = [false, false, false, false];
-    let draggedPiece = null;
+    let currentPuzzleIndex: number = 0;
+    let placedPieces: boolean[] = [false, false, false, false];
+    let draggedPiece: HTMLElement | null = null;
 
-    const puzzleBoard = document.getElementById('puzzleBoard');
-    const piecesArea = document.getElementById('piecesArea');
+    const puzzleBoard = document.getElementById('puzzleBoard')!;
+    const piecesArea = document.getElementById('piecesArea')!;
     const resetBtn = document.getElementById('resetBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const winOverlay = document.getElementById('winOverlay');
-    const winImage = document.getElementById('winImage');
+    const winOverlay = document.getElementById('winOverlay')!;
+    const winImage = document.getElementById('winImage')!;
     const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
-    const confettiContainer = document.getElementById('confettiContainer');
+    const confettiContainer = document.getElementById('confettiContainer')!;
 
-    function initGame() {
+    function initGame(): void {
         placedPieces = [false, false, false, false];
         winOverlay.classList.remove('active');
         renderPuzzle();
     }
 
-    function renderPuzzle() {
+    function renderPuzzle(): void {
         const puzzle = puzzles[currentPuzzleIndex];
         puzzleBoard.innerHTML = '';
         for (let i = 0; i < 4; i++) {
             const slot = document.createElement('div');
             slot.className = 'puzzle-slot';
-            slot.dataset.index = i;
+            slot.dataset.index = String(i);
             puzzleBoard.appendChild(slot);
         }
         piecesArea.innerHTML = '';
         const shuffledIndices = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
-        shuffledIndices.forEach(originalIndex => {
+        shuffledIndices.forEach((originalIndex: number) => {
             const piece = document.createElement('div');
             piece.className = 'puzzle-piece';
-            piece.dataset.index = originalIndex;
+            piece.dataset.index = String(originalIndex);
             piece.innerHTML = puzzle.pieces[originalIndex];
             addDragListeners(piece);
             piecesArea.appendChild(piece);
         });
     }
 
-    function addDragListeners(piece) {
+    function addDragListeners(piece: HTMLElement): void {
         piece.addEventListener('touchstart', handleDragStart, { passive: false });
         piece.addEventListener('touchmove', handleDragMove, { passive: false });
         piece.addEventListener('touchend', handleDragEnd, { passive: false });
         piece.addEventListener('mousedown', handleDragStart);
     }
 
-    function handleDragStart(e) {
+    function handleDragStart(e: TouchEvent | MouseEvent): void {
         if (e.type === 'mousedown') { document.addEventListener('mousemove', handleDragMove); document.addEventListener('mouseup', handleDragEnd); }
         e.preventDefault();
-        draggedPiece = e.currentTarget;
+        draggedPiece = e.currentTarget as HTMLElement;
         draggedPiece.classList.add('dragging');
-        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        const clientX = e instanceof TouchEvent ? e.touches[0].clientX : e.clientX;
+        const clientY = e instanceof TouchEvent ? e.touches[0].clientY : e.clientY;
         updateDragPosition(clientX, clientY);
     }
 
-    function handleDragMove(e) {
+    function handleDragMove(e: TouchEvent | MouseEvent): void {
         if (!draggedPiece) return;
         e.preventDefault();
-        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        const clientX = e instanceof TouchEvent ? e.touches[0].clientX : e.clientX;
+        const clientY = e instanceof TouchEvent ? e.touches[0].clientY : e.clientY;
         updateDragPosition(clientX, clientY);
         checkSlotHighlight(clientX, clientY);
     }
 
-    function updateDragPosition(x, y) {
+    function updateDragPosition(x: number, y: number): void {
         if (!draggedPiece) return;
         draggedPiece.style.left = `${x - draggedPiece.offsetWidth / 2}px`;
         draggedPiece.style.top = `${y - draggedPiece.offsetHeight / 2}px`;
     }
 
-    function handleDragEnd(e) {
+    function handleDragEnd(e: TouchEvent | MouseEvent): void {
         if (!draggedPiece) return;
-        const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.changedTouches[0].clientY : e.clientY;
+        const clientX = e instanceof TouchEvent ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = e instanceof TouchEvent ? e.changedTouches[0].clientY : e.clientY;
         const slot = getSlotAtPosition(clientX, clientY);
-        const pieceIndex = parseInt(draggedPiece.dataset.index);
+        const pieceIndex = parseInt(draggedPiece.dataset.index || '0');
         if (slot) {
-            const slotIndex = parseInt(slot.dataset.index);
+            const slotIndex = parseInt(slot.dataset.index || '0');
             if (pieceIndex === slotIndex && !placedPieces[slotIndex]) {
                 placedPieces[slotIndex] = true;
                 slot.classList.add('filled');
                 slot.innerHTML = puzzles[currentPuzzleIndex].pieces[pieceIndex];
                 draggedPiece.classList.add('placed');
-                if (placedPieces.every(p => p)) setTimeout(showWin, 300);
+                if (placedPieces.every((p: boolean) => p)) setTimeout(showWin, 300);
             }
         }
         draggedPiece.style.left = ''; draggedPiece.style.top = '';
         draggedPiece.classList.remove('dragging');
         draggedPiece = null;
-        document.querySelectorAll('.puzzle-slot').forEach(s => s.classList.remove('highlight'));
+        document.querySelectorAll('.puzzle-slot').forEach((s) => s.classList.remove('highlight'));
         document.removeEventListener('mousemove', handleDragMove);
         document.removeEventListener('mouseup', handleDragEnd);
     }
 
-    function checkSlotHighlight(x, y) {
-        document.querySelectorAll('.puzzle-slot').forEach(slot => {
+    function checkSlotHighlight(x: number, y: number): void {
+        document.querySelectorAll<HTMLElement>('.puzzle-slot').forEach((slot) => {
             if (slot.classList.contains('filled')) return;
             const rect = slot.getBoundingClientRect();
             const isOver = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
@@ -252,8 +258,8 @@ import GameButton from '../components/GameButton.astro';
         });
     }
 
-    function getSlotAtPosition(x, y) {
-        const slots = document.querySelectorAll('.puzzle-slot');
+    function getSlotAtPosition(x: number, y: number): HTMLElement | null {
+        const slots = document.querySelectorAll<HTMLElement>('.puzzle-slot');
         for (const slot of slots) {
             const rect = slot.getBoundingClientRect();
             if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return slot;
@@ -261,14 +267,14 @@ import GameButton from '../components/GameButton.astro';
         return null;
     }
 
-    function showWin() {
+    function showWin(): void {
         winImage.innerHTML = puzzles[currentPuzzleIndex].fullImage;
         winOverlay.classList.add('active');
         createConfetti();
     }
 
-    function createConfetti() {
-        const colors = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+    function createConfetti(): void {
+        const colors: string[] = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
         for (let i = 0; i < 50; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti';
@@ -283,7 +289,7 @@ import GameButton from '../components/GameButton.astro';
         }
     }
 
-    function nextPuzzle() {
+    function nextPuzzle(): void {
         currentPuzzleIndex = (currentPuzzleIndex + 1) % puzzles.length;
         initGame();
     }

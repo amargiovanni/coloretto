@@ -87,13 +87,32 @@ import GameButton from '../components/GameButton.astro';
 </style>
 
 <script>
-    const animals = {
+    type AccessoryType = 'hat' | 'glasses' | 'scarf';
+
+    interface AccessoryItem {
+        id: string;
+        svg: string;
+    }
+
+    interface Accessories {
+        hats: AccessoryItem[];
+        glasses: AccessoryItem[];
+        scarves: AccessoryItem[];
+    }
+
+    interface EquippedAccessories {
+        hat: string | null;
+        glasses: string | null;
+        scarf: string | null;
+    }
+
+    const animals: Record<string, string> = {
         bear: `<svg viewBox="0 0 100 130"><circle cx="25" cy="20" r="15" fill="#8B4513"/><circle cx="25" cy="20" r="8" fill="#A0522D"/><circle cx="75" cy="20" r="15" fill="#8B4513"/><circle cx="75" cy="20" r="8" fill="#A0522D"/><ellipse cx="50" cy="55" rx="40" ry="35" fill="#A0522D"/><ellipse cx="50" cy="105" rx="35" ry="25" fill="#8B4513"/><circle cx="35" cy="50" r="5" fill="#1f2937"/><circle cx="65" cy="50" r="5" fill="#1f2937"/><ellipse cx="50" cy="62" rx="10" ry="7" fill="#D2691E"/><ellipse cx="50" cy="60" rx="5" ry="3" fill="#1f2937"/><path d="M44 70 Q50 78 56 70" stroke="#1f2937" stroke-width="2" fill="none"/></svg>`,
         cat: `<svg viewBox="0 0 100 130"><polygon points="20,35 10,5 35,25" fill="#808080"/><polygon points="80,35 90,5 65,25" fill="#808080"/><polygon points="20,32 15,15 32,25" fill="#FFB6C1"/><polygon points="80,32 85,15 68,25" fill="#FFB6C1"/><ellipse cx="50" cy="50" rx="38" ry="32" fill="#909090"/><ellipse cx="50" cy="105" rx="32" ry="25" fill="#808080"/><ellipse cx="35" cy="45" rx="8" ry="10" fill="#90EE90"/><ellipse cx="65" cy="45" rx="8" ry="10" fill="#90EE90"/><ellipse cx="35" cy="47" rx="3" ry="6" fill="#1f2937"/><ellipse cx="65" cy="47" rx="3" ry="6" fill="#1f2937"/><ellipse cx="50" cy="58" rx="5" ry="4" fill="#FFB6C1"/><line x1="25" y1="55" x2="5" y2="50" stroke="#1f2937" stroke-width="2"/><line x1="25" y1="60" x2="5" y2="62" stroke="#1f2937" stroke-width="2"/><line x1="75" y1="55" x2="95" y2="50" stroke="#1f2937" stroke-width="2"/><line x1="75" y1="60" x2="95" y2="62" stroke="#1f2937" stroke-width="2"/></svg>`,
         rabbit: `<svg viewBox="0 0 100 130"><ellipse cx="35" cy="25" rx="10" ry="30" fill="#F5F5F5"/><ellipse cx="35" cy="25" rx="5" ry="22" fill="#FFB6C1"/><ellipse cx="65" cy="25" rx="10" ry="30" fill="#F5F5F5"/><ellipse cx="65" cy="25" rx="5" ry="22" fill="#FFB6C1"/><ellipse cx="50" cy="60" rx="35" ry="30" fill="#F5F5F5"/><ellipse cx="50" cy="105" rx="30" ry="25" fill="#E8E8E8"/><circle cx="38" cy="55" r="5" fill="#1f2937"/><circle cx="62" cy="55" r="5" fill="#1f2937"/><ellipse cx="50" cy="68" rx="6" ry="4" fill="#FFB6C1"/><circle cx="30" cy="75" r="8" fill="#FFB6C1" opacity="0.4"/><circle cx="70" cy="75" r="8" fill="#FFB6C1" opacity="0.4"/><path d="M44 72 Q50 78 56 72" stroke="#1f2937" stroke-width="2" fill="none"/></svg>`
     };
 
-    const accessories = {
+    const accessories: Accessories = {
         hats: [
             { id: 'hat1', svg: `<svg viewBox="0 0 100 60"><ellipse cx="50" cy="50" rx="45" ry="10" fill="#b91c1c"/><path d="M20 50 Q20 15 50 10 Q80 15 80 50" fill="#ef4444"/><circle cx="50" cy="8" r="6" fill="#fbbf24"/></svg>` },
             { id: 'hat2', svg: `<svg viewBox="0 0 100 60"><path d="M10 55 L10 25 L25 40 L40 20 L50 35 L60 20 L75 40 L90 25 L90 55 Z" fill="#fbbf24"/><circle cx="25" cy="22" r="5" fill="#ef4444"/><circle cx="50" cy="18" r="5" fill="#3b82f6"/><circle cx="75" cy="22" r="5" fill="#22c55e"/></svg>` },
@@ -111,60 +130,62 @@ import GameButton from '../components/GameButton.astro';
         ]
     };
 
-    let currentAnimal = 'bear';
-    let equippedAccessories = { hat: null, glasses: null, scarf: null };
-    let draggedItem = null;
+    let currentAnimal: string = 'bear';
+    let equippedAccessories: EquippedAccessories = { hat: null, glasses: null, scarf: null };
+    let draggedItem: HTMLElement | null = null;
 
-    const animalContainer = document.getElementById('animalContainer');
-    const accessoriesRow = document.getElementById('accessoriesRow');
-    const slotHat = document.getElementById('slotHat');
-    const slotGlasses = document.getElementById('slotGlasses');
-    const slotScarf = document.getElementById('slotScarf');
+    const animalContainer = document.getElementById('animalContainer')!;
+    const accessoriesRow = document.getElementById('accessoriesRow')!;
+    const slotHat = document.getElementById('slotHat')!;
+    const slotGlasses = document.getElementById('slotGlasses')!;
+    const slotScarf = document.getElementById('slotScarf')!;
     const resetBtn = document.getElementById('resetBtn');
     const changeAnimalBtn = document.getElementById('changeAnimalBtn');
-    const sparkleContainer = document.getElementById('sparkleContainer');
+    const sparkleContainer = document.getElementById('sparkleContainer')!;
 
-    function initGame() { renderAnimal(); renderAccessories(); clearAccessories(); }
+    function initGame(): void { renderAnimal(); renderAccessories(); clearAccessories(); }
 
-    function renderAnimal() { animalContainer.innerHTML = animals[currentAnimal]; }
+    function renderAnimal(): void { animalContainer.innerHTML = animals[currentAnimal]; }
 
-    function renderAccessories() {
+    function renderAccessories(): void {
         accessoriesRow.innerHTML = '';
-        const allAccessories = [...accessories.hats, ...accessories.glasses, ...accessories.scarves];
-        allAccessories.forEach(acc => {
+        const allAccessories: AccessoryItem[] = [...accessories.hats, ...accessories.glasses, ...accessories.scarves];
+        allAccessories.forEach((acc: AccessoryItem) => {
             const item = document.createElement('div');
             item.className = 'accessory-item';
             item.dataset.id = acc.id;
-            item.dataset.type = getAccessoryType(acc.id);
+            const accType = getAccessoryType(acc.id);
+            if (accType) item.dataset.type = accType;
             item.innerHTML = acc.svg;
             addDragListeners(item);
             accessoriesRow.appendChild(item);
         });
     }
 
-    function getAccessoryType(id) {
+    function getAccessoryType(id: string): AccessoryType | null {
         if (id.startsWith('hat')) return 'hat';
         if (id.startsWith('glasses')) return 'glasses';
         if (id.startsWith('scarf')) return 'scarf';
         return null;
     }
 
-    function getAccessoryById(id) {
-        const all = [...accessories.hats, ...accessories.glasses, ...accessories.scarves];
-        return all.find(a => a.id === id);
+    function getAccessoryById(id: string): AccessoryItem | undefined {
+        const all: AccessoryItem[] = [...accessories.hats, ...accessories.glasses, ...accessories.scarves];
+        return all.find((a: AccessoryItem) => a.id === id);
     }
 
-    function clearAccessories() {
+    function clearAccessories(): void {
         equippedAccessories = { hat: null, glasses: null, scarf: null };
         slotHat.innerHTML = ''; slotGlasses.innerHTML = ''; slotScarf.innerHTML = '';
-        document.querySelectorAll('.accessory-item').forEach(item => item.classList.remove('selected'));
+        document.querySelectorAll('.accessory-item').forEach((item) => item.classList.remove('selected'));
     }
 
-    function equipAccessory(id) {
+    function equipAccessory(id: string | undefined): void {
+        if (!id) return;
         const type = getAccessoryType(id);
         const accessory = getAccessoryById(id);
         if (!type || !accessory) return;
-        document.querySelectorAll(`.accessory-item[data-type="${type}"]`).forEach(item => item.classList.remove('selected'));
+        document.querySelectorAll(`.accessory-item[data-type="${type}"]`).forEach((item) => item.classList.remove('selected'));
         equippedAccessories[type] = id;
         const slot = type === 'hat' ? slotHat : type === 'glasses' ? slotGlasses : slotScarf;
         slot.innerHTML = accessory.svg;
@@ -173,7 +194,7 @@ import GameButton from '../components/GameButton.astro';
         createSparkles(slot);
     }
 
-    function addDragListeners(element) {
+    function addDragListeners(element: HTMLElement): void {
         element.addEventListener('touchstart', handleDragStart, { passive: false });
         element.addEventListener('touchmove', handleDragMove, { passive: false });
         element.addEventListener('touchend', handleDragEnd, { passive: false });
@@ -181,38 +202,40 @@ import GameButton from '../components/GameButton.astro';
         element.addEventListener('click', () => equipAccessory(element.dataset.id));
     }
 
-    function handleDragStart(e) {
+    function handleDragStart(e: TouchEvent | MouseEvent): void {
         if (e.type === 'mousedown') { document.addEventListener('mousemove', handleDragMove); document.addEventListener('mouseup', handleDragEnd); }
         e.preventDefault();
-        draggedItem = e.currentTarget;
+        draggedItem = e.currentTarget as HTMLElement;
         draggedItem.classList.add('dragging');
-        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        const clientX = e instanceof TouchEvent ? e.touches[0].clientX : e.clientX;
+        const clientY = e instanceof TouchEvent ? e.touches[0].clientY : e.clientY;
         updateDragPosition(clientX, clientY);
     }
 
-    function handleDragMove(e) {
+    function handleDragMove(e: TouchEvent | MouseEvent): void {
         if (!draggedItem) return;
         e.preventDefault();
-        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        const clientX = e instanceof TouchEvent ? e.touches[0].clientX : e.clientX;
+        const clientY = e instanceof TouchEvent ? e.touches[0].clientY : e.clientY;
         updateDragPosition(clientX, clientY);
     }
 
-    function updateDragPosition(x, y) {
+    function updateDragPosition(x: number, y: number): void {
         if (!draggedItem) return;
         draggedItem.style.left = `${x - draggedItem.offsetWidth / 2}px`;
         draggedItem.style.top = `${y - draggedItem.offsetHeight / 2}px`;
     }
 
-    function handleDragEnd(e) {
+    function handleDragEnd(e: TouchEvent | MouseEvent): void {
         if (!draggedItem) return;
-        const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.changedTouches[0].clientY : e.clientY;
+        const clientX = e instanceof TouchEvent ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = e instanceof TouchEvent ? e.changedTouches[0].clientY : e.clientY;
         const stage = document.querySelector('.animal-stage');
-        const stageRect = stage.getBoundingClientRect();
-        if (clientX >= stageRect.left && clientX <= stageRect.right && clientY >= stageRect.top && clientY <= stageRect.bottom) {
-            equipAccessory(draggedItem.dataset.id);
+        if (stage) {
+            const stageRect = stage.getBoundingClientRect();
+            if (clientX >= stageRect.left && clientX <= stageRect.right && clientY >= stageRect.top && clientY <= stageRect.bottom) {
+                equipAccessory(draggedItem.dataset.id);
+            }
         }
         draggedItem.style.left = ''; draggedItem.style.top = '';
         draggedItem.classList.remove('dragging');
@@ -221,11 +244,11 @@ import GameButton from '../components/GameButton.astro';
         document.removeEventListener('mouseup', handleDragEnd);
     }
 
-    function createSparkles(element) {
+    function createSparkles(element: HTMLElement): void {
         const rect = element.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        const emojis = ['✨', '⭐', '🌟', '💫'];
+        const emojis: string[] = ['✨', '⭐', '🌟', '💫'];
         for (let i = 0; i < 6; i++) {
             const sparkle = document.createElement('div');
             sparkle.className = 'sparkle';
@@ -238,12 +261,12 @@ import GameButton from '../components/GameButton.astro';
         }
     }
 
-    function changeAnimal() {
+    function changeAnimal(): void {
         const animalKeys = Object.keys(animals);
         const currentIndex = animalKeys.indexOf(currentAnimal);
         currentAnimal = animalKeys[(currentIndex + 1) % animalKeys.length];
         renderAnimal();
-        Object.entries(equippedAccessories).forEach(([type, id]) => {
+        (Object.entries(equippedAccessories) as [AccessoryType, string | null][]).forEach(([type, id]) => {
             if (id) {
                 const accessory = getAccessoryById(id);
                 const slot = type === 'hat' ? slotHat : type === 'glasses' ? slotGlasses : slotScarf;
