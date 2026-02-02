@@ -302,7 +302,7 @@ import Header from '../components/Header.astro';
             btn.className = `color-btn ${color === selectedColor ? 'selected' : ''}`;
             btn.style.backgroundColor = color;
             if (color === '#ffffff') btn.style.border = '4px solid #d1d5db';
-            btn.addEventListener('click', () => selectColor(color, btn));
+            addChildFriendlyTap(btn, () => selectColor(color, btn));
             palette.appendChild(btn);
         });
     }
