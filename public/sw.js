@@ -4,7 +4,7 @@
 // Per aggiornare: incrementa VERSION e ridistribuisci.
 // Il nuovo SW si attiverà automaticamente.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE_NAME = `coloretto-${VERSION}`;
 
 // Asset da pre-cachare all'installazione
