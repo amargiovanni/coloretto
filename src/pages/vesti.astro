@@ -41,7 +41,7 @@ import GameButton from '../components/GameButton.astro';
     :global(.accessory-slot svg) { width: 100%; height: 100%; }
     .accessories-panel { background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; box-shadow: 0 -5px 30px rgba(0,0,0,0.15); }
     .accessories-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    :global(.accessory-item) { width: 65px; height: 65px; background: #f3f4f6; border-radius: 15px; display: flex; align-items: center; justify-content: center; cursor: grab; transition: transform 0.2s ease, box-shadow 0.2s ease; touch-action: none; border: 3px solid transparent; }
+    :global(.accessory-item) { width: 75px; height: 75px; min-width: 60px; min-height: 60px; background: #f3f4f6; border-radius: 15px; display: flex; align-items: center; justify-content: center; cursor: grab; transition: transform 0.2s ease, box-shadow 0.2s ease; touch-action: none; border: 3px solid transparent; }
     :global(.accessory-item:active) { cursor: grabbing; }
     :global(.accessory-item.dragging) { transform: scale(1.1); box-shadow: 0 8px 30px rgba(0,0,0,0.3); z-index: 100; position: fixed; }
     :global(.accessory-item.selected) { border-color: #667eea; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
@@ -87,6 +87,47 @@ import GameButton from '../components/GameButton.astro';
 </style>
 
 <script>
+    // Child-friendly tap handling with tolerance for finger movement
+    const TAP_TOLERANCE = 25;
+
+    interface TouchState {
+        startX: number;
+        startY: number;
+        startTime: number;
+    }
+
+    function addChildFriendlyTap(element: HTMLElement, callback: () => void): void {
+        let touchState: TouchState | null = null;
+
+        element.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState = {
+                startX: touch.clientX,
+                startY: touch.clientY,
+                startTime: Date.now()
+            };
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            if (!touchState) return;
+            const touch = e.changedTouches[0];
+            const deltaX = Math.abs(touch.clientX - touchState.startX);
+            const deltaY = Math.abs(touch.clientY - touchState.startY);
+            const deltaTime = Date.now() - touchState.startTime;
+            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 500) {
+                e.preventDefault();
+                callback();
+            }
+            touchState = null;
+        }, { passive: false });
+
+        element.addEventListener('click', (e) => {
+            if (!(e as PointerEvent).pointerType || (e as PointerEvent).pointerType === 'mouse') {
+                callback();
+            }
+        });
+    }
+
     type AccessoryType = 'hat' | 'glasses' | 'scarf';
 
     interface AccessoryItem {
@@ -199,7 +240,7 @@ import GameButton from '../components/GameButton.astro';
         element.addEventListener('touchmove', handleDragMove, { passive: false });
         element.addEventListener('touchend', handleDragEnd, { passive: false });
         element.addEventListener('mousedown', handleDragStart);
-        element.addEventListener('click', () => equipAccessory(element.dataset.id));
+        addChildFriendlyTap(element, () => equipAccessory(element.dataset.id));
     }
 
     function handleDragStart(e: TouchEvent | MouseEvent): void {

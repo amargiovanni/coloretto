@@ -26,8 +26,8 @@ import Header from '../components/Header.astro';
 <style>
     .moves-counter { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; color: white; font-weight: 600; }
     .game-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 15px; }
-    .game-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 500px; width: 100%; aspect-ratio: 1; }
-    :global(.card) { aspect-ratio: 1; perspective: 1000px; cursor: pointer; }
+    .game-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 520px; width: 100%; aspect-ratio: 1; }
+    :global(.card) { aspect-ratio: 1; perspective: 1000px; cursor: pointer; min-width: 60px; min-height: 60px; }
     :global(.card-inner) { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
     :global(.card.flipped .card-inner), :global(.card.matched .card-inner) { transform: rotateY(180deg); }
     :global(.card-front), :global(.card-back) { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
@@ -44,6 +44,47 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
+    // Child-friendly tap handling with tolerance for finger movement
+    const TAP_TOLERANCE = 25;
+
+    interface TouchState {
+        startX: number;
+        startY: number;
+        startTime: number;
+    }
+
+    function addChildFriendlyTap(element: HTMLElement, callback: () => void): void {
+        let touchState: TouchState | null = null;
+
+        element.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState = {
+                startX: touch.clientX,
+                startY: touch.clientY,
+                startTime: Date.now()
+            };
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            if (!touchState) return;
+            const touch = e.changedTouches[0];
+            const deltaX = Math.abs(touch.clientX - touchState.startX);
+            const deltaY = Math.abs(touch.clientY - touchState.startY);
+            const deltaTime = Date.now() - touchState.startTime;
+            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 500) {
+                e.preventDefault();
+                callback();
+            }
+            touchState = null;
+        }, { passive: false });
+
+        element.addEventListener('click', (e) => {
+            if (!(e as PointerEvent).pointerType || (e as PointerEvent).pointerType === 'mouse') {
+                callback();
+            }
+        });
+    }
+
     const animals: Record<string, string> = {
         dog: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="30" ry="25" fill="#8B4513"/><circle cx="50" cy="35" r="22" fill="#A0522D"/><ellipse cx="35" cy="25" rx="8" ry="12" fill="#8B4513"/><ellipse cx="65" cy="25" rx="8" ry="12" fill="#8B4513"/><circle cx="42" cy="32" r="4" fill="#1f2937"/><circle cx="58" cy="32" r="4" fill="#1f2937"/><ellipse cx="50" cy="42" rx="6" ry="4" fill="#1f2937"/></svg>`,
         cat: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="28" ry="22" fill="#808080"/><circle cx="50" cy="35" r="20" fill="#909090"/><polygon points="32,25 28,5 42,20" fill="#808080"/><polygon points="68,25 72,5 58,20" fill="#808080"/><ellipse cx="40" cy="32" rx="5" ry="6" fill="#90EE90"/><ellipse cx="60" cy="32" rx="5" ry="6" fill="#90EE90"/><ellipse cx="50" cy="40" rx="4" ry="3" fill="#FFB6C1"/></svg>`,
@@ -76,7 +117,7 @@ import Header from '../components/Header.astro';
             const card = document.createElement('div');
             card.className = 'card'; card.dataset.index = String(i); card.dataset.animal = animal;
             card.innerHTML = `<div class="card-inner"><div class="card-front">${cardBackIcon}</div><div class="card-back">${animals[animal]}</div></div>`;
-            card.addEventListener('click', () => flipCard(card));
+            addChildFriendlyTap(card, () => flipCard(card));
             gameBoard.appendChild(card);
         });
     }
