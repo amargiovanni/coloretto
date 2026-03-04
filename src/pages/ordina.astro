@@ -1,0 +1,200 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Ordina i Numeri">
+    <div class="app-container">
+        <Header title="Ordina i Numeri">
+            <div class="score-display">Punti: <span id="score">0</span></div>
+        </Header>
+        <main class="game-container">
+            <div class="instruction" id="instruction">Tocca i numeri in ordine: <strong>1, 2, 3, 4, 5</strong></div>
+            <div class="bubbles-area" id="bubblesArea"></div>
+            <div class="progress-bar">
+                <div class="progress-dots" id="progressDots"></div>
+            </div>
+        </main>
+        <div class="celebration-container" id="celebrationContainer"></div>
+    </div>
+</GameLayout>
+
+<style>
+    .score-display { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; color: white; font-weight: 600; }
+    .game-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; gap: 15px; }
+    .instruction { background: rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 20px; color: white; font-size: 1.1rem; text-align: center; }
+    .bubbles-area { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; max-width: 420px; width: 100%; min-height: 240px; padding: 20px; }
+    :global(.bubble) {
+        width: 100px; height: 100px; border-radius: 50%; border: none; font-size: 2.8rem; font-weight: 800;
+        color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.25); transition: transform 0.15s;
+        animation: floatIn 0.4s ease backwards; position: relative;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    :global(.bubble::after) {
+        content: ''; position: absolute; top: 12px; left: 18px; width: 20px; height: 14px;
+        background: rgba(255,255,255,0.35); border-radius: 50%; transform: rotate(-25deg);
+    }
+    :global(.bubble:active) { transform: scale(0.9); }
+    :global(.bubble.done) { transform: scale(0.6); opacity: 0.3; pointer-events: none; transition: all 0.3s; }
+    :global(.bubble.correct-tap) { animation: correctBounce 0.4s ease; }
+    :global(.bubble.wrong-tap) { animation: shake 0.4s ease; }
+    :global(.bubble:nth-child(1)) { background: linear-gradient(145deg, #ef4444, #dc2626); }
+    :global(.bubble:nth-child(2)) { background: linear-gradient(145deg, #f97316, #ea580c); }
+    :global(.bubble:nth-child(3)) { background: linear-gradient(145deg, #22c55e, #16a34a); }
+    :global(.bubble:nth-child(4)) { background: linear-gradient(145deg, #3b82f6, #2563eb); }
+    :global(.bubble:nth-child(5)) { background: linear-gradient(145deg, #a855f7, #9333ea); }
+    @keyframes floatIn { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 70% { transform: scale(1.15) rotate(5deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+    @keyframes correctBounce { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(0.6); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+    .progress-bar { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 10px 20px; }
+    .progress-dots { display: flex; gap: 12px; justify-content: center; }
+    :global(.dot) { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: all 0.3s; }
+    :global(.dot.filled) { background: #fbbf24; box-shadow: 0 0 12px rgba(251,191,36,0.6); transform: scale(1.2); }
+    .celebration-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+    :global(.celebration-star) { position: absolute; font-size: 40px; animation: celebrateFall 1s ease-out forwards; }
+    @keyframes celebrateFall { 0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); } 100% { opacity: 0; transform: translateY(150px) rotate(360deg) scale(0.5); } }
+
+    @media (max-width: 400px) {
+        .instruction { font-size: 0.95rem; padding: 10px 16px; }
+        :global(.bubble) { width: 80px; height: 80px; font-size: 2.2rem; }
+        .bubbles-area { gap: 15px; min-height: 200px; }
+    }
+    @media (min-width: 768px) {
+        :global(.bubble) { width: 120px; height: 120px; font-size: 3.2rem; }
+        .bubbles-area { gap: 25px; max-width: 520px; }
+        .instruction { font-size: 1.3rem; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+        .instruction { font-size: 0.85rem; padding: 6px 14px; }
+        :global(.bubble) { width: 65px; height: 65px; font-size: 1.8rem; }
+        .bubbles-area { gap: 12px; min-height: 80px; padding: 8px; }
+        .game-container { gap: 8px; padding: 8px; }
+        .progress-bar { padding: 6px 14px; }
+        :global(.dot) { width: 18px; height: 18px; }
+    }
+</style>
+
+<script>
+    const TAP_TOLERANCE = 25;
+
+    interface TouchState {
+        startX: number;
+        startY: number;
+        startTime: number;
+    }
+
+    function addChildFriendlyTap(element: HTMLElement, callback: () => void): void {
+        let touchState: TouchState | null = null;
+
+        element.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState = { startX: touch.clientX, startY: touch.clientY, startTime: Date.now() };
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            if (!touchState) return;
+            const touch = e.changedTouches[0];
+            const deltaX = Math.abs(touch.clientX - touchState.startX);
+            const deltaY = Math.abs(touch.clientY - touchState.startY);
+            const deltaTime = Date.now() - touchState.startTime;
+            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 1500) {
+                e.preventDefault();
+                callback();
+            }
+            touchState = null;
+        }, { passive: false });
+
+        element.addEventListener('click', (e) => {
+            if (!(e as PointerEvent).pointerType || (e as PointerEvent).pointerType === 'mouse') {
+                callback();
+            }
+        });
+    }
+
+    const MAX_NUM = 5;
+    let nextExpected: number = 1;
+    let score: number = 0;
+    let canTap: boolean = true;
+
+    const bubblesArea = document.getElementById('bubblesArea')!;
+    const progressDots = document.getElementById('progressDots')!;
+    const scoreDisplay = document.getElementById('score')!;
+    const celebrationContainer = document.getElementById('celebrationContainer')!;
+
+    function shuffle<T>(arr: T[]): T[] {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function initRound(): void {
+        canTap = true;
+        nextExpected = 1;
+        bubblesArea.innerHTML = '';
+        progressDots.innerHTML = '';
+
+        const nums = shuffle([1, 2, 3, 4, 5]);
+        nums.forEach((n, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'bubble';
+            btn.textContent = String(n);
+            btn.dataset.num = String(n);
+            btn.style.animationDelay = `${i * 0.08}s`;
+            addChildFriendlyTap(btn, () => handleTap(n, btn));
+            bubblesArea.appendChild(btn);
+        });
+
+        for (let i = 0; i < MAX_NUM; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            progressDots.appendChild(dot);
+        }
+    }
+
+    function handleTap(num: number, btn: HTMLButtonElement): void {
+        if (!canTap || btn.classList.contains('done')) return;
+
+        if (num === nextExpected) {
+            btn.classList.add('correct-tap');
+            setTimeout(() => btn.classList.add('done'), 300);
+
+            const dots = progressDots.querySelectorAll('.dot');
+            dots[nextExpected - 1].classList.add('filled');
+
+            nextExpected++;
+
+            if (nextExpected > MAX_NUM) {
+                canTap = false;
+                score++;
+                scoreDisplay.textContent = String(score);
+                celebrate();
+                setTimeout(initRound, 1200);
+            }
+        } else {
+            btn.classList.add('wrong-tap');
+            setTimeout(() => btn.classList.remove('wrong-tap'), 400);
+        }
+    }
+
+    function celebrate(): void {
+        const r = bubblesArea.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const emojis: string[] = ['⭐', '🌟', '✨', '💫', '🎉'];
+        for (let i = 0; i < 15; i++) {
+            const star = document.createElement('div');
+            star.className = 'celebration-star';
+            star.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            star.style.left = `${cx + (Math.random() - 0.5) * 200}px`;
+            star.style.top = `${cy + (Math.random() - 0.5) * 150}px`;
+            celebrationContainer.appendChild(star);
+            setTimeout(() => star.remove(), 1000);
+        }
+    }
+
+    initRound();
+</script>

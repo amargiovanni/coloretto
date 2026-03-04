@@ -7,6 +7,8 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    /* Prevent text selection on long press */
+    -webkit-user-drag: none;
 }
 
 html, body {
@@ -15,6 +17,14 @@ html, body {
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Prevent scroll and bounce on touch devices */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overscroll-behavior: none;
+    touch-action: manipulation;
 }
 
 /* App Container */
@@ -58,8 +68,10 @@ html, body {
 
 /* Buttons */
 .btn {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
     border-radius: 50%;
     border: none;
     display: flex;
@@ -192,13 +204,15 @@ html, body {
     }
 
     .btn {
-        width: 44px;
-        height: 44px;
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        min-height: 50px;
     }
 
     .btn svg {
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
     }
 
     .status-display {
@@ -218,13 +232,15 @@ html, body {
     }
 
     .btn {
-        width: 60px;
-        height: 60px;
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        min-height: 64px;
     }
 
     .btn svg {
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
     }
 
     .status-display {
@@ -244,13 +260,15 @@ html, body {
     }
 
     .btn {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
     }
 
     .btn svg {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
     }
 
     .status-display {

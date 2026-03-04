@@ -29,11 +29,11 @@ import Header from '../components/Header.astro';
     .game-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .game-area { display: flex; justify-content: space-around; align-items: center; width: 100%; max-width: 700px; gap: 20px; }
     .shapes-column { display: flex; flex-direction: column; gap: 15px; align-items: center; }
-    :global(.shape-item) { width: 80px; height: 80px; background: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); cursor: grab; transition: transform 0.2s, box-shadow 0.2s; touch-action: none; }
+    :global(.shape-item) { width: 90px; height: 90px; min-width: 70px; min-height: 70px; background: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); cursor: grab; transition: transform 0.2s, box-shadow 0.2s; touch-action: none; }
     :global(.shape-item.dragging) { transform: scale(1.1); box-shadow: 0 8px 30px rgba(0,0,0,0.3); z-index: 100; }
     :global(.shape-item.matched) { opacity: 0; transform: scale(0); pointer-events: none; }
-    :global(.shape-item svg) { width: 60px; height: 60px; }
-    :global(.target-zone) { width: 90px; height: 90px; border: 4px dashed rgba(255,255,255,0.5); border-radius: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    :global(.shape-item svg) { width: 65px; height: 65px; }
+    :global(.target-zone) { width: 100px; height: 100px; min-width: 70px; min-height: 70px; border: 4px dashed rgba(255,255,255,0.5); border-radius: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
     :global(.target-zone.highlight) { border-color: #4ade80; background: rgba(74,222,128,0.2); transform: scale(1.1); }
     :global(.target-zone.matched) { border-color: #4ade80; background: rgba(74,222,128,0.3); border-style: solid; }
     :global(.target-zone svg) { width: 50px; height: 50px; opacity: 0.3; }

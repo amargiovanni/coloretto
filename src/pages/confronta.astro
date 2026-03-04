@@ -1,0 +1,215 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Più o Meno?">
+    <div class="app-container">
+        <Header title="Più o Meno?">
+            <div class="score-display">Punti: <span id="score">0</span></div>
+        </Header>
+        <main class="game-container">
+            <div class="instruction" id="instruction">Tocca il gruppo che ha <strong>di più</strong>!</div>
+            <div class="groups-wrapper">
+                <button class="group-card" id="groupA">
+                    <div class="group-objects" id="objectsA"></div>
+                </button>
+                <div class="vs-badge">VS</div>
+                <button class="group-card" id="groupB">
+                    <div class="group-objects" id="objectsB"></div>
+                </button>
+            </div>
+        </main>
+        <div class="celebration-container" id="celebrationContainer"></div>
+    </div>
+</GameLayout>
+
+<style>
+    .score-display { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; color: white; font-weight: 600; }
+    .game-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; gap: 15px; }
+    .instruction { background: rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 20px; color: white; font-size: 1.1rem; text-align: center; }
+    .groups-wrapper { display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%; max-width: 550px; }
+    .group-card {
+        flex: 1; background: white; border-radius: 25px; padding: 20px; min-height: 200px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2); cursor: pointer; border: 4px solid transparent;
+        transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .group-card:active { transform: scale(0.95); }
+    :global(.group-card.correct) { border-color: #22c55e; box-shadow: 0 0 30px rgba(34,197,94,0.5); animation: correctPulse 0.5s; }
+    :global(.group-card.wrong) { border-color: #ef4444; animation: shake 0.5s; }
+    @keyframes correctPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+    .group-objects { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+    :global(.group-item) { width: 50px; height: 50px; animation: popIn 0.3s ease backwards; }
+    :global(.group-item svg) { width: 100%; height: 100%; }
+    @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+    .vs-badge {
+        background: linear-gradient(145deg, #fbbf24, #f59e0b); color: white; font-weight: 800;
+        font-size: 1.2rem; width: 50px; height: 50px; border-radius: 50%; display: flex;
+        align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        flex-shrink: 0;
+    }
+    .celebration-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+    :global(.celebration-star) { position: absolute; font-size: 40px; animation: celebrateFall 1s ease-out forwards; }
+    @keyframes celebrateFall { 0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); } 100% { opacity: 0; transform: translateY(150px) rotate(360deg) scale(0.5); } }
+
+    @media (max-width: 400px) {
+        .instruction { font-size: 0.95rem; padding: 10px 16px; }
+        .group-card { padding: 15px; min-height: 150px; border-radius: 20px; }
+        :global(.group-item) { width: 40px; height: 40px; }
+        .vs-badge { width: 40px; height: 40px; font-size: 1rem; }
+        .groups-wrapper { gap: 10px; }
+    }
+    @media (min-width: 768px) {
+        .group-card { padding: 25px; min-height: 250px; }
+        :global(.group-item) { width: 60px; height: 60px; }
+        .instruction { font-size: 1.3rem; }
+        .vs-badge { width: 60px; height: 60px; font-size: 1.4rem; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+        .instruction { font-size: 0.85rem; padding: 6px 14px; }
+        .group-card { padding: 10px; min-height: 100px; border-radius: 16px; }
+        :global(.group-item) { width: 32px; height: 32px; }
+        .game-container { gap: 8px; padding: 8px; }
+        .vs-badge { width: 36px; height: 36px; font-size: 0.9rem; }
+        .groups-wrapper { gap: 8px; }
+    }
+</style>
+
+<script>
+    const TAP_TOLERANCE = 25;
+
+    interface TouchState {
+        startX: number;
+        startY: number;
+        startTime: number;
+    }
+
+    function addChildFriendlyTap(element: HTMLElement, callback: () => void): void {
+        let touchState: TouchState | null = null;
+
+        element.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState = { startX: touch.clientX, startY: touch.clientY, startTime: Date.now() };
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            if (!touchState) return;
+            const touch = e.changedTouches[0];
+            const deltaX = Math.abs(touch.clientX - touchState.startX);
+            const deltaY = Math.abs(touch.clientY - touchState.startY);
+            const deltaTime = Date.now() - touchState.startTime;
+            if (deltaX <= TAP_TOLERANCE && deltaY <= TAP_TOLERANCE && deltaTime < 1500) {
+                e.preventDefault();
+                callback();
+            }
+            touchState = null;
+        }, { passive: false });
+
+        element.addEventListener('click', (e) => {
+            if (!(e as PointerEvent).pointerType || (e as PointerEvent).pointerType === 'mouse') {
+                callback();
+            }
+        });
+    }
+
+    const objectSvgs: Record<string, string> = {
+        apple: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="35" ry="38" fill="#ef4444"/><path d="M50 20 Q55 5 65 10" stroke="#22c55e" stroke-width="4" fill="none"/><ellipse cx="60" cy="15" rx="12" ry="8" fill="#22c55e"/></svg>`,
+        star: `<svg viewBox="0 0 100 100"><polygon points="50,5 61,40 98,40 68,62 79,97 50,75 21,97 32,62 2,40 39,40" fill="#fbbf24"/></svg>`,
+        ball: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#3b82f6"/><ellipse cx="35" cy="40" rx="15" ry="20" fill="#60a5fa" opacity="0.6"/></svg>`,
+        heart: `<svg viewBox="0 0 100 100"><path d="M50 88 C25 65 5 50 5 30 C5 15 18 5 30 5 C40 5 48 12 50 18 C52 12 60 5 70 5 C82 5 95 15 95 30 C95 50 75 65 50 88z" fill="#ec4899"/></svg>`,
+        fish: `<svg viewBox="0 0 100 100"><ellipse cx="45" cy="50" rx="35" ry="25" fill="#06b6d4"/><polygon points="80,50 100,30 100,70" fill="#06b6d4"/><circle cx="30" cy="44" r="5" fill="white"/><circle cx="31" cy="43" r="2.5" fill="#1e293b"/></svg>`
+    };
+
+    let countA: number = 0;
+    let countB: number = 0;
+    let score: number = 0;
+    let canAnswer: boolean = true;
+
+    const groupA = document.getElementById('groupA')!;
+    const groupB = document.getElementById('groupB')!;
+    const objectsA = document.getElementById('objectsA')!;
+    const objectsB = document.getElementById('objectsB')!;
+    const scoreDisplay = document.getElementById('score')!;
+    const celebrationContainer = document.getElementById('celebrationContainer')!;
+
+    function randomInt(min: number, max: number): number {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function fillGroup(container: HTMLElement, count: number, svgKey: string): void {
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const el = document.createElement('div');
+            el.className = 'group-item';
+            el.innerHTML = objectSvgs[svgKey];
+            el.style.animationDelay = `${i * 0.08}s`;
+            container.appendChild(el);
+        }
+    }
+
+    function nextRound(): void {
+        canAnswer = true;
+        groupA.classList.remove('correct', 'wrong');
+        groupB.classList.remove('correct', 'wrong');
+
+        // Generate two different counts (1-5), always different
+        countA = randomInt(1, 5);
+        do { countB = randomInt(1, 5); } while (countB === countA);
+
+        const keys = Object.keys(objectSvgs);
+        const objA = keys[Math.floor(Math.random() * keys.length)];
+        let objB: string;
+        do { objB = keys[Math.floor(Math.random() * keys.length)]; } while (objB === objA);
+
+        fillGroup(objectsA, countA, objA);
+        fillGroup(objectsB, countB, objB);
+    }
+
+    function handleChoice(chosenSide: 'A' | 'B'): void {
+        if (!canAnswer) return;
+        canAnswer = false;
+
+        const chosenCount = chosenSide === 'A' ? countA : countB;
+        const correctCount = Math.max(countA, countB);
+        const chosenCard = chosenSide === 'A' ? groupA : groupB;
+        const otherCard = chosenSide === 'A' ? groupB : groupA;
+
+        if (chosenCount === correctCount) {
+            chosenCard.classList.add('correct');
+            score++;
+            scoreDisplay.textContent = String(score);
+            celebrate(chosenCard);
+            setTimeout(nextRound, 1200);
+        } else {
+            chosenCard.classList.add('wrong');
+            // Highlight the correct one
+            setTimeout(() => {
+                otherCard.classList.add('correct');
+            }, 300);
+            setTimeout(nextRound, 1500);
+        }
+    }
+
+    function celebrate(card: HTMLElement): void {
+        const r = card.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const emojis: string[] = ['⭐', '🌟', '✨', '💫', '🎉'];
+        for (let i = 0; i < 12; i++) {
+            const star = document.createElement('div');
+            star.className = 'celebration-star';
+            star.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            star.style.left = `${cx + (Math.random() - 0.5) * 150}px`;
+            star.style.top = `${cy + (Math.random() - 0.5) * 120}px`;
+            celebrationContainer.appendChild(star);
+            setTimeout(() => star.remove(), 1000);
+        }
+    }
+
+    addChildFriendlyTap(groupA, () => handleChoice('A'));
+    addChildFriendlyTap(groupB, () => handleChoice('B'));
+
+    nextRound();
+</script>
