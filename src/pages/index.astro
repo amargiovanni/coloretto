@@ -50,6 +50,18 @@ import GameCard from '../components/GameCard.astro';
                         <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.38 0 2.5 1.12 2.5 2.5S4.88 15.8 3.5 15.8H2V19c0 1.1.9 2 2 2h3.8v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V21H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
                     </svg>
                 </GameCard>
+
+                <GameCard href="/ordina" title="Ordina i Numeri" colorClass="game-ordina">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 18h3v-2H3v2zm0-5h6v-2H3v2zm0-7v2h9V6H3zm14 12.5v-2.5h2v-2h-2V11.5l-3 3.5 3 3.5zM13 16h-3v2h3v-2zm4-8.5V10h-2v2h2v2.5l3-3.5-3-3.5zM13 10h3V8h-3v2z"/>
+                    </svg>
+                </GameCard>
+
+                <GameCard href="/confronta" title="Più o Meno?" colorClass="game-confronta">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H7v-2h4v2zm6-4H7v-2h10v2zm0-4H7V6h10v2z"/>
+                    </svg>
+                </GameCard>
             </div>
         </main>
     </div>
@@ -125,7 +137,7 @@ import GameCard from '../components/GameCard.astro';
             padding: 10px;
         }
         .games-grid {
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(8, 1fr);
             gap: 12px;
             max-width: 900px;
         }
