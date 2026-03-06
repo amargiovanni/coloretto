@@ -62,6 +62,18 @@ import GameCard from '../components/GameCard.astro';
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H7v-2h4v2zm6-4H7v-2h10v2zm0-4H7V6h10v2z"/>
                     </svg>
                 </GameCard>
+
+                <GameCard href="/abc" title="ABC" colorClass="game-abc">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M5 17l3.5-10h1l3.5 10h-1.2l-.9-2.7H7.1L6.2 17H5zm2.5-3.8h3l-1.5-4.5-1.5 4.5zM15 17V7h1.1v4.3h.1L19.8 7H21l-3.5 4.1L21.2 17H20l-3.2-4.8-1.8 2.1V17H15z"/>
+                    </svg>
+                </GameCard>
+
+                <GameCard href="/disegna" title="Disegna" colorClass="game-disegna">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                </GameCard>
             </div>
         </main>
     </div>
@@ -137,9 +149,9 @@ import GameCard from '../components/GameCard.astro';
             padding: 10px;
         }
         .games-grid {
-            grid-template-columns: repeat(8, 1fr);
+            grid-template-columns: repeat(10, 1fr);
             gap: 12px;
-            max-width: 900px;
+            max-width: 1100px;
         }
     }
 </style>
