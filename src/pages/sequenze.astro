@@ -1,0 +1,305 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Sequenze - Completa il Pattern">
+    <div class="app-container">
+        <Header title="Sequenze">
+            <div class="score-display"><span id="matchedCount">0</span> / <span id="totalCount">0</span></div>
+            <button class="btn btn-reset" id="resetBtn" aria-label="Ricomincia">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </button>
+        </Header>
+
+        <main class="game-container">
+            <div class="hint-text">Cosa viene dopo?</div>
+            <div class="sequence-row" id="sequenceRow"></div>
+            <div class="choices-row" id="choicesRow"></div>
+        </main>
+
+        <div class="confetti-container" id="confettiContainer"></div>
+        <div class="modal-overlay" id="winModal">
+            <div class="modal-content">
+                <h2>Bravissimo!</h2>
+                <p>Hai completato tutte le sequenze!</p>
+                <button class="modal-btn" id="playAgainBtn">Gioca Ancora</button>
+            </div>
+        </div>
+    </div>
+</GameLayout>
+
+<style>
+    .score-display {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+    }
+
+    .game-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        gap: 25px;
+        overflow: hidden;
+    }
+
+    .hint-text {
+        color: white;
+        font-size: 1.3rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .sequence-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    :global(.seq-item) {
+        width: 65px;
+        height: 65px;
+        background: white;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    :global(.seq-item.mystery) {
+        background: rgba(255,255,255,0.3);
+        border: 3px dashed rgba(255,255,255,0.6);
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .choices-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    :global(.choice-btn) {
+        width: 75px;
+        height: 75px;
+        background: white;
+        border: 4px solid transparent;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        transition: transform 0.15s ease, border-color 0.2s ease;
+    }
+
+    :global(.choice-btn:active) {
+        transform: scale(0.92);
+    }
+
+    :global(.choice-btn.correct) {
+        border-color: #4ade80;
+        background: #ecfdf5;
+    }
+
+    :global(.choice-btn.wrong) {
+        animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(8px); }
+    }
+
+    .confetti-container {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 1000;
+    }
+
+    :global(.confetti) {
+        position: absolute; width: 10px; height: 10px;
+        animation: confettiFall 1.5s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+        0% { opacity: 1; transform: translateY(0) rotate(0); }
+        100% { opacity: 0; transform: translateY(200px) rotate(720deg); }
+    }
+
+    .modal-content { text-align: center; padding: 40px; }
+    .modal-content h2 { font-size: 2rem; margin-bottom: 15px; color: #1f2937; }
+    .modal-content p { font-size: 1.2rem; color: #6b7280; margin-bottom: 25px; }
+
+    @media (max-width: 400px) {
+        .hint-text { font-size: 1.1rem; }
+        :global(.seq-item) { width: 50px; height: 50px; font-size: 1.7rem; border-radius: 12px; }
+        :global(.seq-item.mystery) { font-size: 1.2rem; }
+        :global(.choice-btn) { width: 60px; height: 60px; font-size: 2rem; border-radius: 14px; }
+        .sequence-row { gap: 8px; }
+        .choices-row { gap: 8px; }
+    }
+
+    @media (min-width: 768px) {
+        .hint-text { font-size: 1.6rem; }
+        :global(.seq-item) { width: 80px; height: 80px; font-size: 2.8rem; border-radius: 18px; }
+        :global(.choice-btn) { width: 90px; height: 90px; font-size: 3rem; border-radius: 22px; }
+        .sequence-row { gap: 15px; }
+        .choices-row { gap: 15px; }
+        .game-container { gap: 35px; }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        .game-container { gap: 12px; padding: 8px; }
+        .hint-text { font-size: 0.95rem; }
+        :global(.seq-item) { width: 45px; height: 45px; font-size: 1.5rem; border-radius: 10px; }
+        :global(.choice-btn) { width: 50px; height: 50px; font-size: 1.7rem; border-radius: 12px; }
+        .sequence-row { gap: 6px; }
+        .choices-row { gap: 6px; }
+    }
+</style>
+
+<script>
+    interface SequenceRound {
+        pattern: string[];
+        answer: string;
+        distractors: string[];
+    }
+
+    const ROUNDS: SequenceRound[] = [
+        { pattern: ['🔴', '🔵', '🔴', '🔵', '🔴'], answer: '🔵', distractors: ['🟢', '🔴', '🟡'] },
+        { pattern: ['🐱', '🐶', '🐱', '🐶', '🐱'], answer: '🐶', distractors: ['🐱', '🐰', '🐸'] },
+        { pattern: ['⭐', '⭐', '🌙', '⭐', '⭐'], answer: '🌙', distractors: ['⭐', '☀️', '🌈'] },
+        { pattern: ['🍎', '🍌', '🍎', '🍌', '🍎'], answer: '🍌', distractors: ['🍎', '🍇', '🍊'] },
+        { pattern: ['🟡', '🟡', '🟢', '🟡', '🟡'], answer: '🟢', distractors: ['🟡', '🔴', '🔵'] },
+        { pattern: ['🌸', '🌸', '🌺', '🌸', '🌸'], answer: '🌺', distractors: ['🌸', '🌻', '🌷'] },
+        { pattern: ['🐟', '🐙', '🐟', '🐙', '🐟'], answer: '🐙', distractors: ['🐟', '🦀', '🐳'] },
+        { pattern: ['❤️', '💛', '💙', '❤️', '💛'], answer: '💙', distractors: ['❤️', '💛', '💚'] },
+        { pattern: ['🚗', '🚌', '🚗', '🚌', '🚗'], answer: '🚌', distractors: ['🚗', '✈️', '🚂'] },
+        { pattern: ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'], answer: '6️⃣', distractors: ['7️⃣', '3️⃣', '5️⃣'] },
+        { pattern: ['🔺', '🔵', '🔺', '🔵', '🔺'], answer: '🔵', distractors: ['🔺', '🟩', '🔶'] },
+        { pattern: ['🍕', '🍕', '🌮', '🍕', '🍕'], answer: '🌮', distractors: ['🍕', '🍔', '🌭'] },
+    ];
+
+    const NUM_ROUNDS = 8;
+    let rounds: SequenceRound[] = [];
+    let currentRound = 0;
+    let score = 0;
+    let locked = false;
+
+    const sequenceRow = document.getElementById('sequenceRow')!;
+    const choicesRow = document.getElementById('choicesRow')!;
+    const matchedCount = document.getElementById('matchedCount')!;
+    const totalCount = document.getElementById('totalCount')!;
+    const confettiContainer = document.getElementById('confettiContainer')!;
+    const winModal = document.getElementById('winModal')!;
+
+    function shuffle<T>(arr: T[]): T[] {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function initGame(): void {
+        score = 0;
+        currentRound = 0;
+        locked = false;
+        winModal.classList.remove('active');
+        rounds = shuffle(ROUNDS).slice(0, NUM_ROUNDS);
+        matchedCount.textContent = '0';
+        totalCount.textContent = String(NUM_ROUNDS);
+        showRound();
+    }
+
+    function showRound(): void {
+        if (currentRound >= rounds.length) {
+            setTimeout(() => winModal.classList.add('active'), 500);
+            return;
+        }
+
+        locked = false;
+        const round = rounds[currentRound];
+
+        sequenceRow.innerHTML = '';
+        round.pattern.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'seq-item';
+            el.textContent = item;
+            sequenceRow.appendChild(el);
+        });
+
+        const mystery = document.createElement('div');
+        mystery.className = 'seq-item mystery';
+        mystery.id = 'mysterySlot';
+        mystery.textContent = '?';
+        sequenceRow.appendChild(mystery);
+
+        choicesRow.innerHTML = '';
+        const choices = shuffle([round.answer, ...round.distractors]);
+        choices.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = choice;
+            btn.addEventListener('click', () => handleTap(choice, btn, round.answer));
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleTap(choice, btn, round.answer);
+            }, { passive: false });
+            choicesRow.appendChild(btn);
+        });
+    }
+
+    function handleTap(choice: string, btn: HTMLButtonElement, answer: string): void {
+        if (locked) return;
+
+        if (choice === answer) {
+            locked = true;
+            btn.classList.add('correct');
+            const mystery = document.getElementById('mysterySlot')!;
+            mystery.textContent = answer;
+            mystery.classList.remove('mystery');
+            score++;
+            matchedCount.textContent = String(score);
+            createConfetti(mystery);
+            currentRound++;
+            setTimeout(showRound, 800);
+        } else {
+            btn.classList.add('wrong');
+            setTimeout(() => btn.classList.remove('wrong'), 400);
+        }
+    }
+
+    function createConfetti(el: HTMLElement): void {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#fbbf24', '#ec4899', '#8b5cf6'];
+        for (let i = 0; i < 12; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.left = `${cx + (Math.random() - 0.5) * 80}px`;
+            c.style.top = `${cy}px`;
+            c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confettiContainer.appendChild(c);
+            setTimeout(() => c.remove(), 1500);
+        }
+    }
+
+    document.getElementById('resetBtn')!.addEventListener('click', initGame);
+    document.getElementById('playAgainBtn')!.addEventListener('click', initGame);
+    initGame();
+</script>

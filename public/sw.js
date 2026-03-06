@@ -4,7 +4,7 @@
 // Per aggiornare: incrementa VERSION e ridistribuisci.
 // Il nuovo SW si attiverà automaticamente.
 
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE_NAME = `coloretto-${VERSION}`;
 
 // Asset da pre-cachare all'installazione
@@ -23,6 +23,9 @@ const PRECACHE_ASSETS = [
     '/intruso/',
     '/associa/',
     '/stagioni/',
+    '/sequenze/',
+    '/ombre/',
+    '/somme/',
     '/favicon.svg',
     '/manifest.webmanifest',
     '/icons/icon-192.png',
