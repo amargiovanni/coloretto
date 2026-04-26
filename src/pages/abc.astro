@@ -210,6 +210,16 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
+    import { speak, playSuccess, playWrong } from '../scripts/speech';
+
+    // Italian phonetic pronunciation for each letter (matches how kids learn the alphabet).
+    const LETTER_SOUNDS: Record<string, string> = {
+        A: 'a', B: 'bi', C: 'ci', D: 'di', E: 'e', F: 'effe', G: 'gi',
+        H: 'acca', I: 'i', J: 'i lunga', K: 'cappa', L: 'elle', M: 'emme',
+        N: 'enne', O: 'o', P: 'pi', Q: 'cu', R: 'erre', S: 'esse', T: 'ti',
+        U: 'u', V: 'vu', W: 'doppia vu', X: 'ics', Y: 'ipsilon', Z: 'zeta',
+    };
+
     const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVZ'.split('');
     const ROUND_SIZE = 8;
     const GRID_SIZE = 8;
@@ -266,6 +276,7 @@ import Header from '../components/Header.astro';
         targetLetterEl.textContent = target;
         targetLetterEl.style.color = LETTER_COLORS[target] || 'white';
         letterHint.textContent = `Trova la lettera ${target}`;
+        speak(`Trova la lettera ${LETTER_SOUNDS[target] ?? target}`);
 
         const distractors = shuffle(ALPHABET.filter(l => l !== target)).slice(0, GRID_SIZE - 1);
         const gridLetters = shuffle([target, ...distractors]);
@@ -295,9 +306,13 @@ import Header from '../components/Header.astro';
             matchedCount.textContent = String(matched);
             currentIndex++;
             createConfetti(btn);
-            setTimeout(showNextLetter, 600);
+            playSuccess();
+            speak(`${LETTER_SOUNDS[letter] ?? letter}! Bravo!`);
+            setTimeout(showNextLetter, 1200);
         } else {
             btn.classList.add('wrong');
+            playWrong();
+            speak(LETTER_SOUNDS[letter] ?? letter);
             setTimeout(() => btn.classList.remove('wrong'), 400);
         }
     }
