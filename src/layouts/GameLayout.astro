@@ -49,9 +49,15 @@ const { title } = Astro.props;
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
+            // updateViaCache: 'none' forza il browser a ri-scaricare /sw.js dalla rete
+            // ad ogni controllo invece di usare la cache HTTP (che puo' durare fino a 24h).
+            // Cosi' i nuovi SW vengono raccolti immediatamente al primo refresh.
+            navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
                 .then((reg) => {
                     console.log('SW registered:', reg.scope);
+
+                    // Forza un controllo di aggiornamento subito dopo la registrazione.
+                    reg.update().catch(() => {});
 
                     // Controlla aggiornamenti
                     reg.addEventListener('updatefound', () => {
