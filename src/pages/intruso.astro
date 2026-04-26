@@ -1,0 +1,303 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Trova l'Intruso">
+    <div class="app-container">
+        <Header title="Trova l'Intruso">
+            <div class="score-display"><span id="matchedCount">0</span> / <span id="totalCount">0</span></div>
+            <button class="btn btn-reset" id="resetBtn" aria-label="Ricomincia">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </button>
+        </Header>
+
+        <main class="game-container">
+            <div class="hint-text" id="hintText">Quale non c'entra?</div>
+            <div class="cards-grid" id="cardsGrid"></div>
+        </main>
+
+        <div class="confetti-container" id="confettiContainer"></div>
+        <div class="modal-overlay" id="winModal">
+            <div class="modal-content">
+                <h2>Bravissimo!</h2>
+                <p>Hai trovato tutti gli intrusi!</p>
+                <button class="modal-btn" id="playAgainBtn">Gioca Ancora</button>
+            </div>
+        </div>
+    </div>
+</GameLayout>
+
+<style>
+    .score-display {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+    }
+
+    .game-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        gap: 20px;
+        overflow: hidden;
+    }
+
+    .hint-text {
+        color: white;
+        font-size: 1.3rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        text-align: center;
+    }
+
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        max-width: 400px;
+        width: 100%;
+    }
+
+    :global(.intruso-card) {
+        aspect-ratio: 1;
+        background: white;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        gap: 8px;
+        cursor: pointer;
+        box-shadow: 0 6px 25px rgba(0,0,0,0.2);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+    }
+
+    :global(.intruso-card:active) {
+        transform: scale(0.95);
+    }
+
+    :global(.intruso-card .card-emoji) {
+        font-size: 3.5rem;
+        line-height: 1;
+    }
+
+    :global(.intruso-card .card-label) {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-align: center;
+    }
+
+    :global(.intruso-card.correct) {
+        background: #4ade80;
+        transform: scale(1.05);
+    }
+
+    :global(.intruso-card.correct .card-label) {
+        color: white;
+    }
+
+    :global(.intruso-card.wrong) {
+        animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(8px); }
+    }
+
+    .confetti-container {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 1000;
+    }
+
+    :global(.confetti) {
+        position: absolute; width: 10px; height: 10px;
+        animation: confettiFall 1.5s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+        0% { opacity: 1; transform: translateY(0) rotate(0); }
+        100% { opacity: 0; transform: translateY(200px) rotate(720deg); }
+    }
+
+    .modal-content {
+        text-align: center; padding: 40px;
+    }
+
+    .modal-content h2 {
+        font-size: 2rem; margin-bottom: 15px; color: #1f2937;
+    }
+
+    .modal-content p {
+        font-size: 1.2rem; color: #6b7280; margin-bottom: 25px;
+    }
+
+    @media (max-width: 400px) {
+        .hint-text { font-size: 1.1rem; }
+        :global(.intruso-card .card-emoji) { font-size: 2.8rem; }
+        :global(.intruso-card .card-label) { font-size: 0.8rem; }
+        .cards-grid { gap: 12px; }
+    }
+
+    @media (min-width: 768px) {
+        .hint-text { font-size: 1.6rem; }
+        .cards-grid { gap: 20px; max-width: 500px; }
+        :global(.intruso-card) { padding: 20px; border-radius: 25px; }
+        :global(.intruso-card .card-emoji) { font-size: 4.5rem; }
+        :global(.intruso-card .card-label) { font-size: 1.1rem; }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        .game-container { flex-direction: row; gap: 15px; padding: 10px; }
+        .hint-text { font-size: 1rem; writing-mode: vertical-rl; text-orientation: mixed; }
+        .cards-grid { max-width: 350px; gap: 10px; }
+        :global(.intruso-card .card-emoji) { font-size: 2.2rem; }
+        :global(.intruso-card .card-label) { font-size: 0.7rem; }
+    }
+</style>
+
+<script>
+    interface RoundData {
+        category: string;
+        items: { emoji: string; label: string }[];
+        intruso: { emoji: string; label: string };
+    }
+
+    const ROUNDS: RoundData[] = [
+        { category: 'Frutti', items: [
+            { emoji: '🍎', label: 'Mela' }, { emoji: '🍌', label: 'Banana' }, { emoji: '🍇', label: 'Uva' }],
+            intruso: { emoji: '🐶', label: 'Cane' } },
+        { category: 'Animali', items: [
+            { emoji: '🐱', label: 'Gatto' }, { emoji: '🐕', label: 'Cane' }, { emoji: '🐰', label: 'Coniglio' }],
+            intruso: { emoji: '🚗', label: 'Auto' } },
+        { category: 'Veicoli', items: [
+            { emoji: '🚗', label: 'Auto' }, { emoji: '🚌', label: 'Bus' }, { emoji: '✈️', label: 'Aereo' }],
+            intruso: { emoji: '🌻', label: 'Girasole' } },
+        { category: 'Verdure', items: [
+            { emoji: '🥕', label: 'Carota' }, { emoji: '🥦', label: 'Broccolo' }, { emoji: '🍅', label: 'Pomodoro' }],
+            intruso: { emoji: '⚽', label: 'Pallone' } },
+        { category: 'Vestiti', items: [
+            { emoji: '👕', label: 'Maglietta' }, { emoji: '👖', label: 'Pantaloni' }, { emoji: '🧢', label: 'Cappello' }],
+            intruso: { emoji: '🍕', label: 'Pizza' } },
+        { category: 'Cibi', items: [
+            { emoji: '🍕', label: 'Pizza' }, { emoji: '🍔', label: 'Hamburger' }, { emoji: '🌮', label: 'Taco' }],
+            intruso: { emoji: '🎸', label: 'Chitarra' } },
+        { category: 'Strumenti musicali', items: [
+            { emoji: '🎸', label: 'Chitarra' }, { emoji: '🥁', label: 'Tamburo' }, { emoji: '🎺', label: 'Tromba' }],
+            intruso: { emoji: '🥕', label: 'Carota' } },
+        { category: 'Insetti', items: [
+            { emoji: '🐝', label: 'Ape' }, { emoji: '🦋', label: 'Farfalla' }, { emoji: '🐛', label: 'Bruco' }],
+            intruso: { emoji: '🏠', label: 'Casa' } },
+        { category: 'Fiori', items: [
+            { emoji: '🌹', label: 'Rosa' }, { emoji: '🌻', label: 'Girasole' }, { emoji: '🌷', label: 'Tulipano' }],
+            intruso: { emoji: '📚', label: 'Libri' } },
+        { category: 'Sport', items: [
+            { emoji: '⚽', label: 'Calcio' }, { emoji: '🏀', label: 'Basket' }, { emoji: '🎾', label: 'Tennis' }],
+            intruso: { emoji: '🌹', label: 'Rosa' } },
+    ];
+
+    const NUM_ROUNDS = 6;
+    let rounds: RoundData[] = [];
+    let currentRound = 0;
+    let score = 0;
+    let locked = false;
+
+    const cardsGrid = document.getElementById('cardsGrid')!;
+    const hintText = document.getElementById('hintText')!;
+    const matchedCount = document.getElementById('matchedCount')!;
+    const totalCount = document.getElementById('totalCount')!;
+    const confettiContainer = document.getElementById('confettiContainer')!;
+    const winModal = document.getElementById('winModal')!;
+
+    function shuffle<T>(arr: T[]): T[] {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function initGame(): void {
+        score = 0;
+        currentRound = 0;
+        locked = false;
+        winModal.classList.remove('active');
+        rounds = shuffle(ROUNDS).slice(0, NUM_ROUNDS);
+        matchedCount.textContent = '0';
+        totalCount.textContent = String(NUM_ROUNDS);
+        showRound();
+    }
+
+    function showRound(): void {
+        if (currentRound >= rounds.length) {
+            setTimeout(() => winModal.classList.add('active'), 500);
+            return;
+        }
+
+        locked = false;
+        const round = rounds[currentRound];
+        hintText.textContent = 'Quale non c\'entra?';
+
+        const allItems = shuffle([...round.items, round.intruso]);
+        cardsGrid.innerHTML = '';
+
+        allItems.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'intruso-card';
+            card.dataset.intruso = String(item === round.intruso);
+            card.innerHTML = `<span class="card-emoji">${item.emoji}</span><span class="card-label">${item.label}</span>`;
+            card.addEventListener('click', () => handleTap(card, item === round.intruso));
+            card.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleTap(card, item === round.intruso);
+            }, { passive: false });
+            cardsGrid.appendChild(card);
+        });
+    }
+
+    function handleTap(card: HTMLElement, isIntruso: boolean): void {
+        if (locked) return;
+
+        if (isIntruso) {
+            locked = true;
+            card.classList.add('correct');
+            score++;
+            matchedCount.textContent = String(score);
+            createConfetti(card);
+            currentRound++;
+            setTimeout(showRound, 800);
+        } else {
+            card.classList.add('wrong');
+            setTimeout(() => card.classList.remove('wrong'), 400);
+        }
+    }
+
+    function createConfetti(el: HTMLElement): void {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#fbbf24', '#ec4899', '#8b5cf6'];
+        for (let i = 0; i < 12; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.left = `${cx + (Math.random() - 0.5) * 80}px`;
+            c.style.top = `${cy}px`;
+            c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confettiContainer.appendChild(c);
+            setTimeout(() => c.remove(), 1500);
+        }
+    }
+
+    document.getElementById('resetBtn')!.addEventListener('click', initGame);
+    document.getElementById('playAgainBtn')!.addEventListener('click', initGame);
+    initGame();
+</script>

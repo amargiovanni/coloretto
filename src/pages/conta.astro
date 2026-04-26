@@ -41,6 +41,12 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
+    import { speak, playSuccess, playWrong } from '../scripts/speech';
+
+    const NUMBER_WORDS: Record<number, string> = {
+        1: 'uno', 2: 'due', 3: 'tre', 4: 'quattro', 5: 'cinque',
+    };
+
     // Child-friendly tap handling with tolerance for finger movement
     const TAP_TOLERANCE = 25;
 
@@ -126,9 +132,13 @@ import Header from '../components/Header.astro';
         if (num === currentCount) {
             canAnswer = false; score++; scoreDisplay.textContent = String(score);
             btn.classList.add('correct'); celebrate();
-            setTimeout(nextRound, 1000);
+            playSuccess();
+            speak(`Bravo! ${NUMBER_WORDS[num] ?? num}`);
+            setTimeout(nextRound, 1200);
         } else {
             btn.classList.add('wrong');
+            playWrong();
+            speak(NUMBER_WORDS[num] ?? String(num));
             setTimeout(() => btn.classList.remove('wrong'), 500);
         }
     }

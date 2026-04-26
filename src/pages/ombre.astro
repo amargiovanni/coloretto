@@ -1,0 +1,283 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Ombre - Abbina l'Oggetto">
+    <div class="app-container">
+        <Header title="Ombre">
+            <div class="score-display"><span id="matchedCount">0</span> / <span id="totalCount">0</span></div>
+            <button class="btn btn-reset" id="resetBtn" aria-label="Ricomincia">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </button>
+        </Header>
+
+        <main class="game-container">
+            <div class="shadow-display" id="shadowDisplay"></div>
+            <div class="hint-text">Qual è l'oggetto giusto?</div>
+            <div class="choices-grid" id="choicesGrid"></div>
+        </main>
+
+        <div class="confetti-container" id="confettiContainer"></div>
+        <div class="modal-overlay" id="winModal">
+            <div class="modal-content">
+                <h2>Fantastico!</h2>
+                <p>Hai indovinato tutte le ombre!</p>
+                <button class="modal-btn" id="playAgainBtn">Gioca Ancora</button>
+            </div>
+        </div>
+    </div>
+</GameLayout>
+
+<style>
+    .score-display {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+    }
+
+    .game-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        gap: 20px;
+        overflow: hidden;
+    }
+
+    .shadow-display {
+        width: 150px;
+        height: 150px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        filter: brightness(0) opacity(0.8);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        transition: filter 0.5s ease;
+    }
+
+    .shadow-display.revealed {
+        filter: none;
+        background: white;
+    }
+
+    .hint-text {
+        color: rgba(255,255,255,0.85);
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .choices-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        max-width: 300px;
+        width: 100%;
+    }
+
+    :global(.shadow-choice) {
+        aspect-ratio: 1;
+        background: white;
+        border: 4px solid transparent;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.8rem;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        transition: transform 0.15s ease, border-color 0.2s ease;
+    }
+
+    :global(.shadow-choice:active) {
+        transform: scale(0.95);
+    }
+
+    :global(.shadow-choice.correct) {
+        border-color: #4ade80;
+        background: #ecfdf5;
+    }
+
+    :global(.shadow-choice.wrong) {
+        animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(8px); }
+    }
+
+    .confetti-container {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 1000;
+    }
+
+    :global(.confetti) {
+        position: absolute; width: 10px; height: 10px;
+        animation: confettiFall 1.5s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+        0% { opacity: 1; transform: translateY(0) rotate(0); }
+        100% { opacity: 0; transform: translateY(200px) rotate(720deg); }
+    }
+
+    .modal-content { text-align: center; padding: 40px; }
+    .modal-content h2 { font-size: 2rem; margin-bottom: 15px; color: #1f2937; }
+    .modal-content p { font-size: 1.2rem; color: #6b7280; margin-bottom: 25px; }
+
+    @media (max-width: 400px) {
+        .shadow-display { width: 120px; height: 120px; font-size: 4rem; border-radius: 25px; }
+        .hint-text { font-size: 0.95rem; }
+        :global(.shadow-choice) { font-size: 2.2rem; border-radius: 14px; }
+        .choices-grid { gap: 10px; max-width: 250px; }
+        .game-container { gap: 15px; }
+    }
+
+    @media (min-width: 768px) {
+        .shadow-display { width: 180px; height: 180px; font-size: 6rem; border-radius: 35px; }
+        .hint-text { font-size: 1.4rem; }
+        :global(.shadow-choice) { font-size: 3.5rem; border-radius: 22px; }
+        .choices-grid { gap: 15px; max-width: 380px; }
+        .game-container { gap: 30px; }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        .game-container { flex-direction: row; gap: 15px; padding: 8px; }
+        .shadow-display { width: 100px; height: 100px; font-size: 3rem; border-radius: 20px; }
+        .hint-text { display: none; }
+        :global(.shadow-choice) { font-size: 1.8rem; border-radius: 12px; }
+        .choices-grid { max-width: 200px; gap: 8px; }
+    }
+</style>
+
+<script>
+    interface ShadowItem {
+        emoji: string;
+        distractors: string[];
+    }
+
+    const ALL_ITEMS: ShadowItem[] = [
+        { emoji: '🐶', distractors: ['🐱', '🐰', '🐸'] },
+        { emoji: '🚗', distractors: ['🚌', '🚂', '✈️'] },
+        { emoji: '🌻', distractors: ['🌹', '🌷', '🌸'] },
+        { emoji: '⚽', distractors: ['🏀', '🎾', '🏐'] },
+        { emoji: '🍎', distractors: ['🍊', '🍋', '🍇'] },
+        { emoji: '🏠', distractors: ['🏰', '⛪', '🏢'] },
+        { emoji: '🐦', distractors: ['🦋', '🐝', '🐛'] },
+        { emoji: '🎸', distractors: ['🥁', '🎺', '🎹'] },
+        { emoji: '👟', distractors: ['👢', '🥾', '👠'] },
+        { emoji: '🐟', distractors: ['🐙', '🦀', '🐳'] },
+        { emoji: '🌙', distractors: ['⭐', '☀️', '🌈'] },
+        { emoji: '🎄', distractors: ['🌲', '🌴', '🎋'] },
+        { emoji: '🐘', distractors: ['🦒', '🦁', '🐻'] },
+        { emoji: '✏️', distractors: ['📏', '📎', '✂️'] },
+        { emoji: '🍕', distractors: ['🍔', '🌮', '🌭'] },
+    ];
+
+    const NUM_ROUNDS = 8;
+    let rounds: ShadowItem[] = [];
+    let currentRound = 0;
+    let score = 0;
+    let locked = false;
+
+    const shadowDisplay = document.getElementById('shadowDisplay')!;
+    const choicesGrid = document.getElementById('choicesGrid')!;
+    const matchedCount = document.getElementById('matchedCount')!;
+    const totalCount = document.getElementById('totalCount')!;
+    const confettiContainer = document.getElementById('confettiContainer')!;
+    const winModal = document.getElementById('winModal')!;
+
+    function shuffle<T>(arr: T[]): T[] {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function initGame(): void {
+        score = 0;
+        currentRound = 0;
+        locked = false;
+        winModal.classList.remove('active');
+        rounds = shuffle(ALL_ITEMS).slice(0, NUM_ROUNDS);
+        matchedCount.textContent = '0';
+        totalCount.textContent = String(NUM_ROUNDS);
+        showRound();
+    }
+
+    function showRound(): void {
+        if (currentRound >= rounds.length) {
+            setTimeout(() => winModal.classList.add('active'), 500);
+            return;
+        }
+
+        locked = false;
+        const item = rounds[currentRound];
+
+        shadowDisplay.textContent = item.emoji;
+        shadowDisplay.classList.remove('revealed');
+
+        const choices = shuffle([item.emoji, ...shuffle(item.distractors).slice(0, 3)]);
+        choicesGrid.innerHTML = '';
+
+        choices.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.className = 'shadow-choice';
+            btn.textContent = choice;
+            btn.addEventListener('click', () => handleTap(choice, btn, item.emoji));
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleTap(choice, btn, item.emoji);
+            }, { passive: false });
+            choicesGrid.appendChild(btn);
+        });
+    }
+
+    function handleTap(choice: string, btn: HTMLButtonElement, answer: string): void {
+        if (locked) return;
+
+        if (choice === answer) {
+            locked = true;
+            btn.classList.add('correct');
+            shadowDisplay.classList.add('revealed');
+            score++;
+            matchedCount.textContent = String(score);
+            createConfetti(shadowDisplay);
+            currentRound++;
+            setTimeout(showRound, 1000);
+        } else {
+            btn.classList.add('wrong');
+            setTimeout(() => btn.classList.remove('wrong'), 400);
+        }
+    }
+
+    function createConfetti(el: HTMLElement): void {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const colors = ['#ef4444', '#3b82f6', '#22c55e', '#fbbf24', '#ec4899', '#8b5cf6'];
+        for (let i = 0; i < 12; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.left = `${cx + (Math.random() - 0.5) * 80}px`;
+            c.style.top = `${cy}px`;
+            c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confettiContainer.appendChild(c);
+            setTimeout(() => c.remove(), 1500);
+        }
+    }
+
+    document.getElementById('resetBtn')!.addEventListener('click', initGame);
+    document.getElementById('playAgainBtn')!.addEventListener('click', initGame);
+    initGame();
+</script>

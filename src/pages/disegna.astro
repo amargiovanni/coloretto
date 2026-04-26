@@ -1,0 +1,370 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Disegna - Disegno Libero">
+    <div class="app-container">
+        <Header title="Disegna">
+            <button class="btn btn-reset" id="clearBtn" aria-label="Cancella tutto">
+                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+            <button class="btn btn-undo" id="undoBtn" aria-label="Annulla">
+                <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05 1-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+            </button>
+        </Header>
+
+        <main class="canvas-container">
+            <canvas id="drawCanvas"></canvas>
+        </main>
+
+        <nav class="toolbar">
+            <div class="tool-section">
+                <div class="palette" id="palette"></div>
+            </div>
+            <div class="tool-section">
+                <div class="brush-sizes" id="brushSizes"></div>
+            </div>
+        </nav>
+    </div>
+</GameLayout>
+
+<style>
+    .canvas-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        overflow: hidden;
+    }
+
+    #drawCanvas {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        width: 100%;
+        height: 100%;
+        max-width: 900px;
+        touch-action: none;
+        cursor: crosshair;
+    }
+
+    .toolbar {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 25px 25px 0 0;
+        padding: 12px 15px;
+        box-shadow: 0 -5px 30px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .tool-section {
+        display: flex;
+        justify-content: center;
+    }
+
+    .palette {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        max-width: 500px;
+    }
+
+    :global(.color-dot) {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    :global(.color-dot:active) {
+        transform: scale(0.9);
+    }
+
+    :global(.color-dot.selected) {
+        border-color: #1f2937;
+        transform: scale(1.15);
+    }
+
+    .brush-sizes {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    :global(.brush-btn) {
+        background: white;
+        border: 3px solid transparent;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    :global(.brush-btn:active) {
+        transform: scale(0.9);
+    }
+
+    :global(.brush-btn.selected) {
+        border-color: #1f2937;
+        transform: scale(1.1);
+    }
+
+    :global(.brush-btn .dot) {
+        background: #1f2937;
+        border-radius: 50%;
+    }
+
+    .btn-undo {
+        background: linear-gradient(145deg, #f97316, #ea580c);
+    }
+
+    @media (max-width: 400px) {
+        :global(.color-dot) {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            min-height: 38px;
+        }
+        .palette {
+            gap: 6px;
+        }
+        .toolbar {
+            padding: 10px 12px;
+            gap: 8px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        :global(.color-dot) {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            min-height: 52px;
+        }
+        .palette {
+            gap: 10px;
+            max-width: 700px;
+        }
+        .toolbar {
+            padding: 15px 20px;
+        }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        .canvas-container {
+            padding: 5px;
+        }
+        .toolbar {
+            flex-direction: row;
+            padding: 8px;
+            gap: 15px;
+        }
+        :global(.color-dot) {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+        }
+        .palette {
+            gap: 5px;
+        }
+    }
+</style>
+
+<script>
+    const colors: string[] = [
+        '#ef4444', '#f97316', '#fbbf24', '#facc15', '#84cc16',
+        '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6',
+        '#d946ef', '#ec4899', '#78716c', '#1f2937', '#ffffff',
+    ];
+
+    const brushSizes = [
+        { size: 4, btnSize: 36, dotSize: 6 },
+        { size: 10, btnSize: 42, dotSize: 12 },
+        { size: 20, btnSize: 50, dotSize: 20 },
+        { size: 35, btnSize: 56, dotSize: 30 },
+    ];
+
+    let selectedColor = colors[0];
+    let selectedSize = brushSizes[1].size;
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let history: ImageData[] = [];
+    const MAX_HISTORY = 30;
+
+    const canvas = document.getElementById('drawCanvas') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+    const palette = document.getElementById('palette')!;
+    const brushSizesEl = document.getElementById('brushSizes')!;
+
+    function resizeCanvas(): void {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        let savedData: ImageData | null = null;
+        if (canvas.width > 0 && canvas.height > 0) {
+            savedData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (savedData) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = savedData.width;
+            tempCanvas.height = savedData.height;
+            tempCanvas.getContext('2d')!.putImageData(savedData, 0, 0);
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = 'white';
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+    }
+
+    function saveState(): void {
+        if (history.length >= MAX_HISTORY) history.shift();
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    function undo(): void {
+        if (history.length === 0) return;
+        const state = history.pop()!;
+        ctx.putImageData(state, 0, 0);
+    }
+
+    function getPos(e: MouseEvent | TouchEvent): { x: number; y: number } {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e instanceof TouchEvent ? e.touches[0] || e.changedTouches[0] : e;
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top,
+        };
+    }
+
+    function startDraw(e: MouseEvent | TouchEvent): void {
+        e.preventDefault();
+        saveState();
+        isDrawing = true;
+        const pos = getPos(e);
+        lastX = pos.x;
+        lastY = pos.y;
+
+        ctx.strokeStyle = selectedColor;
+        ctx.lineWidth = selectedSize;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, selectedSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = selectedColor;
+        ctx.fill();
+    }
+
+    function draw(e: MouseEvent | TouchEvent): void {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+
+        ctx.strokeStyle = selectedColor;
+        ctx.lineWidth = selectedSize;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    function stopDraw(): void {
+        isDrawing = false;
+    }
+
+    function clearCanvas(): void {
+        saveState();
+        ctx.fillStyle = 'white';
+        const dpr = window.devicePixelRatio || 1;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+    }
+
+    function initPalette(): void {
+        palette.innerHTML = '';
+        colors.forEach(color => {
+            const btn = document.createElement('button');
+            btn.className = `color-dot ${color === selectedColor ? 'selected' : ''}`;
+            btn.style.backgroundColor = color;
+            if (color === '#ffffff') btn.style.border = '3px solid #d1d5db';
+            btn.addEventListener('click', () => {
+                selectedColor = color;
+                document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                if (color === '#ffffff') btn.style.border = '3px solid #1f2937';
+            });
+            palette.appendChild(btn);
+        });
+    }
+
+    function initBrushSizes(): void {
+        brushSizesEl.innerHTML = '';
+        brushSizes.forEach(brush => {
+            const btn = document.createElement('button');
+            btn.className = `brush-btn ${brush.size === selectedSize ? 'selected' : ''}`;
+            btn.style.width = `${brush.btnSize}px`;
+            btn.style.height = `${brush.btnSize}px`;
+            btn.style.minWidth = `${brush.btnSize}px`;
+            btn.style.minHeight = `${brush.btnSize}px`;
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.style.width = `${brush.dotSize}px`;
+            dot.style.height = `${brush.dotSize}px`;
+            btn.appendChild(dot);
+            btn.addEventListener('click', () => {
+                selectedSize = brush.size;
+                document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            });
+            brushSizesEl.appendChild(btn);
+        });
+    }
+
+    // Canvas events
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDraw);
+    canvas.addEventListener('touchcancel', stopDraw);
+
+    document.getElementById('clearBtn')!.addEventListener('click', clearCanvas);
+    document.getElementById('undoBtn')!.addEventListener('click', undo);
+
+    window.addEventListener('resize', resizeCanvas);
+
+    initPalette();
+    initBrushSizes();
+    resizeCanvas();
+</script>

@@ -1,0 +1,215 @@
+---
+import GameLayout from '../layouts/GameLayout.astro';
+import Header from '../components/Header.astro';
+---
+
+<GameLayout title="Schiaccia le Bolle">
+    <div class="app-container">
+        <Header title="Schiaccia le Bolle">
+            <div class="score-display">🫧 <span id="poppedCount">0</span></div>
+        </Header>
+        <main class="bubbles-area" id="bubblesArea"></main>
+    </div>
+</GameLayout>
+
+<style>
+    .score-display {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+    }
+
+    .bubbles-area {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 100%);
+        touch-action: none;
+    }
+
+    :global(.bubble) {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 28%, rgba(255,255,255,0.85), var(--c1) 55%, var(--c2));
+        box-shadow:
+            0 6px 20px rgba(0,0,0,0.18),
+            inset -8px -10px 20px rgba(0,0,0,0.12),
+            inset 6px 8px 14px rgba(255,255,255,0.35);
+        cursor: pointer;
+        animation: rise linear forwards;
+        will-change: transform;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    :global(.bubble.pop) {
+        animation: pop 0.32s ease-out forwards !important;
+    }
+
+    @keyframes rise {
+        from {
+            transform: translate3d(0, 0, 0);
+        }
+        to {
+            transform: translate3d(var(--sway, 0px), var(--rise, -800px), 0);
+        }
+    }
+
+    @keyframes pop {
+        0%   { transform: scale(1); opacity: 1; }
+        40%  { transform: scale(1.4); opacity: 0.9; }
+        100% { transform: scale(0.2); opacity: 0; }
+    }
+
+    :global(.splash) {
+        position: absolute;
+        pointer-events: none;
+        font-size: 32px;
+        animation: splashOut 0.6s ease-out forwards;
+        z-index: 5;
+    }
+
+    @keyframes splashOut {
+        0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+        100% { transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -40px))) scale(1.2); opacity: 0; }
+    }
+</style>
+
+<script>
+    import { speak, playPop } from '../scripts/speech';
+
+    interface BubbleColor {
+        name: string;
+        c1: string;
+        c2: string;
+        freq: number;
+    }
+
+    const COLORS: BubbleColor[] = [
+        { name: 'rosso',     c1: '#fca5a5', c2: '#ef4444', freq: 520 },
+        { name: 'arancione', c1: '#fdba74', c2: '#f97316', freq: 590 },
+        { name: 'giallo',    c1: '#fde68a', c2: '#fbbf24', freq: 660 },
+        { name: 'verde',     c1: '#86efac', c2: '#22c55e', freq: 740 },
+        { name: 'azzurro',   c1: '#93c5fd', c2: '#06b6d4', freq: 830 },
+        { name: 'blu',       c1: '#93c5fd', c2: '#3b82f6', freq: 880 },
+        { name: 'viola',     c1: '#c4b5fd', c2: '#8b5cf6', freq: 990 },
+        { name: 'rosa',      c1: '#f9a8d4', c2: '#ec4899', freq: 1050 },
+    ];
+
+    const SPLASH_EMOJIS = ['✨', '⭐', '💫', '🌟', '🎉'];
+
+    const area = document.getElementById('bubblesArea') as HTMLElement;
+    const counter = document.getElementById('poppedCount') as HTMLElement;
+
+    let popped = 0;
+
+    function rand(min: number, max: number): number {
+        return Math.random() * (max - min) + min;
+    }
+
+    function spawnBubble(): void {
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const w = area.clientWidth;
+        const h = area.clientHeight;
+        if (w === 0 || h === 0) return;
+
+        const size = rand(70, Math.min(140, w * 0.35));
+        const left = rand(0, Math.max(0, w - size));
+        const duration = rand(6, 10);
+        const sway = rand(-80, 80);
+        const rise = -(h + size + 40);
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.style.setProperty('--c1', color.c1);
+        bubble.style.setProperty('--c2', color.c2);
+        bubble.style.setProperty('--sway', `${sway}px`);
+        bubble.style.setProperty('--rise', `${rise}px`);
+        bubble.style.width = `${size}px`;
+        bubble.style.height = `${size}px`;
+        bubble.style.left = `${left}px`;
+        bubble.style.top = `${h}px`;
+        bubble.style.animationDuration = `${duration}s`;
+
+        let popped = false;
+        const popBubble = (clientX: number, clientY: number): void => {
+            if (popped) return;
+            popped = true;
+            bubble.classList.add('pop');
+            playPop(color.freq);
+            speak(color.name);
+            updateCounter();
+            spawnSplash(clientX, clientY);
+            setTimeout(() => bubble.remove(), 320);
+        };
+
+        bubble.addEventListener('click', (e) => {
+            popBubble(e.clientX, e.clientY);
+        });
+        bubble.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            popBubble(t.clientX, t.clientY);
+        }, { passive: false });
+
+        bubble.addEventListener('animationend', (e) => {
+            if ((e as AnimationEvent).animationName === 'rise') bubble.remove();
+        });
+
+        area.appendChild(bubble);
+    }
+
+    function updateCounter(): void {
+        popped++;
+        counter.textContent = String(popped);
+    }
+
+    function spawnSplash(clientX: number, clientY: number): void {
+        const areaRect = area.getBoundingClientRect();
+        const cx = clientX - areaRect.left;
+        const cy = clientY - areaRect.top;
+        for (let i = 0; i < 4; i++) {
+            const s = document.createElement('div');
+            s.className = 'splash';
+            s.textContent = SPLASH_EMOJIS[Math.floor(Math.random() * SPLASH_EMOJIS.length)];
+            s.style.left = `${cx}px`;
+            s.style.top = `${cy}px`;
+            s.style.setProperty('--dx', `${rand(-50, 50)}px`);
+            s.style.setProperty('--dy', `${rand(-70, -20)}px`);
+            area.appendChild(s);
+            setTimeout(() => s.remove(), 600);
+        }
+    }
+
+    // Continuous spawning. Slight stagger keeps the screen lively but not overwhelming.
+    let spawnTimer: number | null = null;
+    function startSpawning(): void {
+        if (spawnTimer !== null) return;
+        spawnTimer = window.setInterval(spawnBubble, 750);
+    }
+    function stopSpawning(): void {
+        if (spawnTimer !== null) {
+            clearInterval(spawnTimer);
+            spawnTimer = null;
+        }
+    }
+
+    // Initial burst so the screen isn't empty.
+    function initialBurst(): void {
+        for (let i = 0; i < 4; i++) setTimeout(spawnBubble, i * 300);
+    }
+
+    // Wait one frame so layout is measured before the first spawn.
+    requestAnimationFrame(() => {
+        initialBurst();
+        startSpawning();
+    });
+
+    // Pause when tab is hidden — saves battery and avoids a deluge of bubbles on return.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopSpawning();
+        else startSpawning();
+    });
+</script>

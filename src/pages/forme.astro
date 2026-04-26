@@ -47,6 +47,17 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
+    import { speak, playSuccess } from '../scripts/speech';
+
+    const SHAPE_NAMES: Record<string, string> = {
+        circle: 'cerchio',
+        square: 'quadrato',
+        triangle: 'triangolo',
+        star: 'stella',
+        heart: 'cuore',
+        hexagon: 'esagono',
+    };
+
     interface ShapeData {
         color: string;
         svg: string;
@@ -120,6 +131,9 @@ import Header from '../components/Header.astro';
             matched++; matchedCount.textContent = String(matched);
             draggedElement.classList.add('matched'); target.classList.add('matched');
             createConfetti(target);
+            playSuccess();
+            const shapeName = SHAPE_NAMES[draggedElement.dataset.shape ?? ''];
+            if (shapeName) speak(`${shapeName}! Bravo!`);
             if (matched === Object.keys(shapes).length) setTimeout(() => winModal.classList.add('active'), 500);
         }
         draggedElement.style.position = ''; draggedElement.style.left = ''; draggedElement.style.top = '';
