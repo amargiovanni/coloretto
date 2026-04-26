@@ -236,6 +236,7 @@ import Header from '../components/Header.astro';
     let targetLetters: string[] = [];
     let currentIndex = 0;
     let matched = 0;
+    let canAnswer = true;
 
     const targetLetterEl = document.getElementById('targetLetter')!;
     const letterHint = document.getElementById('letterHint')!;
@@ -257,6 +258,7 @@ import Header from '../components/Header.astro';
     function initGame(): void {
         matched = 0;
         currentIndex = 0;
+        canAnswer = true;
         winModal.classList.remove('active');
 
         targetLetters = shuffle(ALPHABET).slice(0, ROUND_SIZE);
@@ -277,6 +279,7 @@ import Header from '../components/Header.astro';
         targetLetterEl.style.color = LETTER_COLORS[target] || 'white';
         letterHint.textContent = `Trova la lettera ${target}`;
         speak(`Trova la lettera ${LETTER_SOUNDS[target] ?? target}`);
+        canAnswer = true;
 
         const distractors = shuffle(ALPHABET.filter(l => l !== target)).slice(0, GRID_SIZE - 1);
         const gridLetters = shuffle([target, ...distractors]);
@@ -297,10 +300,12 @@ import Header from '../components/Header.astro';
     }
 
     function handleTap(letter: string, btn: HTMLButtonElement): void {
+        if (!canAnswer) return;
         if (btn.classList.contains('correct')) return;
 
         const target = targetLetters[currentIndex];
         if (letter === target) {
+            canAnswer = false;
             btn.classList.add('correct');
             matched++;
             matchedCount.textContent = String(matched);
