@@ -210,6 +210,16 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
+    import { speak, playSuccess, playWrong } from '../scripts/speech';
+
+    // Italian phonetic pronunciation for each letter (matches how kids learn the alphabet).
+    const LETTER_SOUNDS: Record<string, string> = {
+        A: 'a', B: 'bi', C: 'ci', D: 'di', E: 'e', F: 'effe', G: 'gi',
+        H: 'acca', I: 'i', J: 'i lunga', K: 'cappa', L: 'elle', M: 'emme',
+        N: 'enne', O: 'o', P: 'pi', Q: 'cu', R: 'erre', S: 'esse', T: 'ti',
+        U: 'u', V: 'vu', W: 'doppia vu', X: 'ics', Y: 'ipsilon', Z: 'zeta',
+    };
+
     const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVZ'.split('');
     const ROUND_SIZE = 8;
     const GRID_SIZE = 8;
@@ -226,6 +236,7 @@ import Header from '../components/Header.astro';
     let targetLetters: string[] = [];
     let currentIndex = 0;
     let matched = 0;
+    let canAnswer = true;
 
     const targetLetterEl = document.getElementById('targetLetter')!;
     const letterHint = document.getElementById('letterHint')!;
@@ -247,6 +258,7 @@ import Header from '../components/Header.astro';
     function initGame(): void {
         matched = 0;
         currentIndex = 0;
+        canAnswer = true;
         winModal.classList.remove('active');
 
         targetLetters = shuffle(ALPHABET).slice(0, ROUND_SIZE);
@@ -266,6 +278,8 @@ import Header from '../components/Header.astro';
         targetLetterEl.textContent = target;
         targetLetterEl.style.color = LETTER_COLORS[target] || 'white';
         letterHint.textContent = `Trova la lettera ${target}`;
+        speak(`Trova la lettera ${LETTER_SOUNDS[target] ?? target}`);
+        canAnswer = true;
 
         const distractors = shuffle(ALPHABET.filter(l => l !== target)).slice(0, GRID_SIZE - 1);
         const gridLetters = shuffle([target, ...distractors]);
@@ -286,18 +300,24 @@ import Header from '../components/Header.astro';
     }
 
     function handleTap(letter: string, btn: HTMLButtonElement): void {
+        if (!canAnswer) return;
         if (btn.classList.contains('correct')) return;
 
         const target = targetLetters[currentIndex];
         if (letter === target) {
+            canAnswer = false;
             btn.classList.add('correct');
             matched++;
             matchedCount.textContent = String(matched);
             currentIndex++;
             createConfetti(btn);
-            setTimeout(showNextLetter, 600);
+            playSuccess();
+            speak(`${LETTER_SOUNDS[letter] ?? letter}! Bravo!`);
+            setTimeout(showNextLetter, 1200);
         } else {
             btn.classList.add('wrong');
+            playWrong();
+            speak(LETTER_SOUNDS[letter] ?? letter);
             setTimeout(() => btn.classList.remove('wrong'), 400);
         }
     }

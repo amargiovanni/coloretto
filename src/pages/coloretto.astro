@@ -213,6 +213,26 @@ import Header from '../components/Header.astro';
 </style>
 
 <script>
+    import { speak, playPop } from '../scripts/speech';
+
+    const COLOR_NAMES: Record<string, string> = {
+        '#ef4444': 'rosso',
+        '#f97316': 'arancione',
+        '#fbbf24': 'giallo',
+        '#facc15': 'giallo',
+        '#84cc16': 'verde lime',
+        '#22c55e': 'verde',
+        '#14b8a6': 'verde acqua',
+        '#06b6d4': 'azzurro',
+        '#3b82f6': 'blu',
+        '#8b5cf6': 'viola',
+        '#d946ef': 'fucsia',
+        '#ec4899': 'rosa',
+        '#78716c': 'grigio',
+        '#1f2937': 'nero',
+        '#ffffff': 'bianco',
+    };
+
     interface ImageData {
         name: string;
         viewBox: string;
@@ -311,6 +331,8 @@ import Header from '../components/Header.astro';
         selectedColor = color;
         document.querySelectorAll('.color-btn').forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
+        const name = COLOR_NAMES[color.toLowerCase()];
+        if (name) speak(name);
     }
 
     function loadImage(imageKey: string): void {
@@ -339,6 +361,7 @@ import Header from '../components/Header.astro';
         el.setAttribute('fill', selectedColor);
         if (!coloredElements[currentImage]) coloredElements[currentImage] = {};
         coloredElements[currentImage][id] = selectedColor;
+        playPop(700);
     }
 
     function resetImage(): void {
