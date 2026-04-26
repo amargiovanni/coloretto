@@ -4,7 +4,7 @@
 // Per aggiornare: incrementa VERSION e ridistribuisci.
 // Il nuovo SW si attiverà automaticamente.
 
-const VERSION = 'v1777221021204';
+const VERSION = 'v1777221375160';
 const CACHE_NAME = `coloretto-${VERSION}`;
 
 // Asset da pre-cachare all'installazione
@@ -23,7 +23,7 @@ const PRECACHE_ASSETS = [
     '/intruso/',
     '/associa/',
     '/stagioni/',
-    '/sequenze/',
+    '/bolle/',
     '/ombre/',
     '/somme/',
     '/favicon.svg',
@@ -42,7 +42,15 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[SW] Pre-caching assets');
-                return cache.addAll(PRECACHE_ASSETS);
+                // Cache assets individually so a single 404 doesn't abort the entire install
+                // (cache.addAll is atomic and fails on any missing resource).
+                return Promise.all(
+                    PRECACHE_ASSETS.map((url) =>
+                        cache.add(url).catch((err) => {
+                            console.warn(`[SW] Failed to pre-cache ${url}:`, err);
+                        })
+                    )
+                );
             })
             .then(() => {
                 // Attiva immediatamente senza attendere
